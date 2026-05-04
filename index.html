@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Domin Inn Orders</title>
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="The Domin Inn Orders">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/app-icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail">
+      <div class="brand-lockup">
+        <div class="mark" aria-hidden="true">DI</div>
+        <div>
+          <h1>The Domin Inn Orders</h1>
+          <p>Inventory requests for daily operations</p>
+        </div>
+      </div>
+
+      <section class="status-panel">
+        <p class="eyeline">Today</p>
+        <strong id="lowStockCount">0 low-stock lines</strong>
+        <span id="catalogStatus">Loading stock catalogue...</span>
+      </section>
+
+      <form class="order-form" id="stockForm">
+        <label>
+          Requested by
+          <input id="requestedBy" name="requestedBy" autocomplete="name" placeholder="Staff name" required>
+        </label>
+        <label>
+          Needed by
+          <input id="neededBy" name="neededBy" type="date">
+        </label>
+        <label>
+          Order notes
+          <textarea id="orderNote" name="orderNote" rows="4" placeholder="Supplier notes, substitutions, delivery window..."></textarea>
+        </label>
+      </form>
+
+      <section class="orders-folder">
+        <div class="folder-head">
+          <div>
+            <p class="eyeline">Orders folder</p>
+            <h2>Saved orders</h2>
+          </div>
+          <button class="ghost-button" id="refreshOrders" type="button">Refresh</button>
+        </div>
+        <div class="order-history" id="orderHistory" aria-live="polite"></div>
+        <div class="order-preview" id="orderPreview"></div>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyeline">Stock catalogue</p>
+          <h2>Build a purchase request</h2>
+        </div>
+        <div class="toolbar">
+          <input id="searchInput" type="search" placeholder="Search item or pack size">
+        </div>
+      </header>
+
+      <nav class="category-tabs" id="categoryTabs" aria-label="Stock categories"></nav>
+      <section class="catalog-grid" id="catalogGrid" aria-live="polite"></section>
+    </main>
+
+    <aside class="cart-panel">
+      <div class="cart-head">
+        <div>
+          <p class="eyeline">Purchase request</p>
+          <h2>Order basket</h2>
+        </div>
+        <button class="ghost-button" id="clearCart" type="button">Clear</button>
+      </div>
+
+      <div class="cart-lines" id="cartLines"></div>
+
+      <div class="cart-summary">
+        <div>
+          <span>Lines</span>
+          <strong id="lineCount">0</strong>
+        </div>
+        <div>
+          <span>Units</span>
+          <strong id="unitCount">0</strong>
+        </div>
+      </div>
+
+      <button class="submit-button" id="submitOrder" type="button">Submit stock order</button>
+      <p class="submit-message" id="submitMessage" role="status"></p>
+    </aside>
+  </div>
+
+  <template id="emptyCartTemplate">
+    <div class="empty-state">
+      <strong>No stock selected</strong>
+      <span>Add items from the catalogue to create a request.</span>
+    </div>
+  </template>
+
+  <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  </script>
+</body>
+</html>
