@@ -205,7 +205,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && url.pathname === "/api/orders") {
-      return sendJson(response, 201, createOrder(await readJson(request)));
+      return sendJson(response, 201, await createOrder(await readJson(request)));
     }
 
     return serveStatic(url.pathname, response);
@@ -220,7 +220,7 @@ server.listen(PORT, HOST, () => {
   console.log(`Stock order app running at http://${HOST}:${PORT}`);
 });
 
-function createOrder(payload) {
+async function createOrder(payload) {
   const requestedBy = cleanText(payload.requestedBy);
   const lineItems = Array.isArray(payload.lineItems) ? payload.lineItems : [];
   const existingOrders = readOrders();
@@ -255,7 +255,8 @@ function createOrder(payload) {
     }))
   };
 
-  writeOrder(order);
+  const files = writeOrder(order);
+  await sendOrderNotification(order, files);
 
   return {
     orderId: order.id,
@@ -282,8 +283,53 @@ function readOrders() {
 
 function writeOrder(order) {
   const baseName = `${order.orderNumber}-${order.createdAt.slice(0, 10)}`;
-  fs.writeFileSync(path.join(ORDERS_DIR, `${baseName}.json`), JSON.stringify(order, null, 2));
-  fs.writeFileSync(path.join(ORDERS_DIR, `${baseName}.pdf`), buildOrderPdf(order));
+  const jsonPath = path.join(ORDERS_DIR, `${baseName}.json`);
+  const pdfPath = path.join(ORDERS_DIR, `${baseName}.pdf`);
+
+  fs.writeFileSync(jsonPath, JSON.stringify(order, null, 2));
+  fs.writeFileSync(pdfPath, buildOrderPdf(order));
+
+  return { jsonPath, pdfPath };
+}
+
+async function sendOrderNotification(order, files) {
+  const required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "ORDER_NOTIFY_EMAIL"];
+  if (!required.every((key) => process.env[key])) return;
+
+  try {
+    const nodemailer = require("nodemailer");
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 465),
+      secure: String(process.env.SMTP_SECURE || "true") !== "false",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: process.env.ORDER_NOTIFY_EMAIL,
+      subject: `New stock order ${order.orderNumber}`,
+      text: [
+        `New stock order ${order.orderNumber} has been placed.`,
+        "",
+        `Requested by: ${order.requestedBy}`,
+        order.neededBy ? `Needed by: ${order.neededBy}` : "",
+        "",
+        "The PDF order form is attached."
+      ].filter(Boolean).join("\n"),
+      attachments: [
+        {
+          filename: `${order.orderNumber}.pdf`,
+          path: files.pdfPath
+        }
+      ]
+    });
+  } catch (error) {
+    console.error(`Order notification failed: ${error.message}`);
+  }
 }
 
 function deleteOrder(orderId) {

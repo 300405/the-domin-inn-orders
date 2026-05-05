@@ -36,3 +36,19 @@ ORDER_APP_PASSWORD=choose-a-staff-password
 ```
 
 `ORDER_APP_PASSWORD` enables the password prompt for the public app. Render's persistent disk stores `stock-items.json` and the `orders/` PDFs.
+
+## Email Notifications
+
+New orders can email the PDF automatically when SMTP variables are set:
+
+```sh
+ORDER_NOTIFY_EMAIL=thedominoinn@gmail.com
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=thedomin@virginmedia.com
+SMTP_PASS=your-email-app-password
+SMTP_FROM=thedomin@virginmedia.com
+```
+
+If these are not set, orders still save normally but no email is sent.
