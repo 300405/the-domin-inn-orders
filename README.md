@@ -39,7 +39,19 @@ ORDER_APP_PASSWORD=choose-a-staff-password
 
 ## Email Notifications
 
-New orders can email the PDF automatically when SMTP variables are set:
+New orders can email the PDF automatically. On Render's free plan, use Resend because SMTP ports are blocked.
+
+Recommended Render variables:
+
+```sh
+ORDER_NOTIFY_EMAIL=thedominoinn@gmail.com
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM=The Domin Inn Orders <onboarding@resend.dev>
+```
+
+Create the Resend account with `thedominoinn@gmail.com` while using `onboarding@resend.dev`. To send from a custom address later, verify a domain in Resend and update `RESEND_FROM`.
+
+SMTP variables are still supported for hosts that allow SMTP:
 
 ```sh
 ORDER_NOTIFY_EMAIL=thedominoinn@gmail.com

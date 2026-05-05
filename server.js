@@ -299,6 +299,10 @@ function writeOrder(order) {
 }
 
 async function sendOrderNotification(order, files, options = {}) {
+  if (process.env.RESEND_API_KEY) {
+    return sendOrderViaResend(order, files, options);
+  }
+
   const required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "ORDER_NOTIFY_EMAIL"];
   const missing = required.filter((key) => !process.env[key]);
   if (missing.length) {
@@ -344,6 +348,65 @@ async function sendOrderNotification(order, files, options = {}) {
         }
       ]
     });
+    return true;
+  } catch (error) {
+    if (options.throwOnError) {
+      error.statusCode = 500;
+      error.publicMessage = `Email could not be sent: ${error.message}`;
+      throw error;
+    }
+    console.error(`Order notification failed: ${error.message}`);
+    return false;
+  }
+}
+
+async function sendOrderViaResend(order, files, options = {}) {
+  const required = ["RESEND_API_KEY", "ORDER_NOTIFY_EMAIL"];
+  const missing = required.filter((key) => !process.env[key]);
+  if (missing.length) {
+    if (options.throwOnError) {
+      const error = new Error(`Email is missing Render setting: ${missing.join(", ")}`);
+      error.statusCode = 500;
+      throw error;
+    }
+    return false;
+  }
+
+  try {
+    const pdfFileName = path.basename(files.pdfPath);
+    const pdfContent = fs.readFileSync(files.pdfPath).toString("base64");
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM || "The Domin Inn Orders <onboarding@resend.dev>",
+        to: [process.env.ORDER_NOTIFY_EMAIL],
+        subject: `New stock order ${order.orderNumber}`,
+        text: [
+          `New stock order ${order.orderNumber} has been placed.`,
+          "",
+          `Requested by: ${order.requestedBy}`,
+          order.neededBy ? `Needed by: ${order.neededBy}` : "",
+          "",
+          "The PDF order form is attached."
+        ].filter(Boolean).join("\n"),
+        attachments: [
+          {
+            filename: pdfFileName,
+            content: pdfContent
+          }
+        ]
+      })
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.message || result.error?.message || `Resend returned ${response.status}`);
+    }
+
     return true;
   } catch (error) {
     if (options.throwOnError) {
