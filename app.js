@@ -23,7 +23,6 @@ const els = {
   orderPreview: document.querySelector("#orderPreview"),
   submitOrder: document.querySelector("#submitOrder"),
   submitMessage: document.querySelector("#submitMessage"),
-  requestedBy: document.querySelector("#requestedBy"),
   neededBy: document.querySelector("#neededBy"),
   orderNote: document.querySelector("#orderNote"),
   emptyCartTemplate: document.querySelector("#emptyCartTemplate")
@@ -303,7 +302,7 @@ function renderOrderPreview() {
     <div class="preview-head">
       <div>
         <strong>${escapeHtml(order.orderNumber)}</strong>
-        <span>${escapeHtml(order.requestedBy)}</span>
+        <span>${escapeHtml(formatDate(order.createdAt))}</span>
       </div>
       <div class="preview-actions">
         ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener" download="${escapeHtml(getOrderPdfName(order))}">${escapeHtml(getOrderPdfName(order))}</a>` : ""}
@@ -437,13 +436,6 @@ async function deleteStockItem(itemId) {
 
 async function submitOrder() {
   const lines = Array.from(state.cart.values());
-  const requestedBy = els.requestedBy.value.trim();
-
-  if (!requestedBy) {
-    setMessage("Add who is requesting the stock order.", "error");
-    els.requestedBy.focus();
-    return;
-  }
 
   if (!lines.length) {
     setMessage("Add at least one stock item first.", "error");
@@ -458,7 +450,6 @@ async function submitOrder() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        requestedBy,
         neededBy: els.neededBy.value,
         note: els.orderNote.value.trim(),
         lineItems: lines.map((line) => ({

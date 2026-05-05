@@ -226,15 +226,8 @@ server.listen(PORT, HOST, () => {
 });
 
 async function createOrder(payload) {
-  const requestedBy = cleanText(payload.requestedBy);
   const lineItems = Array.isArray(payload.lineItems) ? payload.lineItems : [];
   const existingOrders = readOrders();
-
-  if (!requestedBy) {
-    const error = new Error("Requested by is required.");
-    error.statusCode = 400;
-    throw error;
-  }
 
   if (!lineItems.length) {
     const error = new Error("The order needs at least one stock line.");
@@ -245,7 +238,6 @@ async function createOrder(payload) {
   const order = {
     id: randomUUID(),
     orderNumber: `SO-${String(existingOrders.length + 1).padStart(4, "0")}`,
-    requestedBy,
     neededBy: cleanText(payload.neededBy),
     note: cleanText(payload.note),
     createdAt: new Date().toISOString(),
@@ -336,7 +328,6 @@ async function sendOrderNotification(order, files, options = {}) {
       text: [
         `New stock order ${order.orderNumber} has been placed.`,
         "",
-        `Requested by: ${order.requestedBy}`,
         order.neededBy ? `Needed by: ${order.neededBy}` : "",
         "",
         "The PDF order form is attached."
@@ -388,7 +379,6 @@ async function sendOrderViaResend(order, files, options = {}) {
         text: [
           `New stock order ${order.orderNumber} has been placed.`,
           "",
-          `Requested by: ${order.requestedBy}`,
           order.neededBy ? `Needed by: ${order.neededBy}` : "",
           "",
           "The PDF order form is attached."
@@ -481,7 +471,6 @@ function buildOrderPdf(order) {
     "Stock Order",
     `Order: ${order.orderNumber}`,
     `Date: ${formatDate(order.createdAt)}`,
-    `Requested by: ${order.requestedBy}`,
     order.neededBy ? `Needed by: ${order.neededBy}` : "",
     order.note ? `Notes: ${order.note}` : "",
     "",
