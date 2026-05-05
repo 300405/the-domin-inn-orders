@@ -337,21 +337,23 @@ function getOrderPdfName(order) {
   return `${order.orderNumber}-${datePart}.pdf`;
 }
 
-function emailOrder(orderId) {
+async function emailOrder(orderId) {
   const order = state.orders.find((entry) => entry.id === orderId);
   if (!order) return;
 
-  const subject = `Stock Order ${order.orderNumber}`;
-  const body = [
-    `Please find stock order ${order.orderNumber}.`,
-    "",
-    `From: thedomin@virginmedia.com`,
-    `PDF: ${order.pdfPath || "Saved in the orders folder"}`,
-    "",
-    "Attach the saved PDF from the orders folder before sending."
-  ].join("\n");
+  setMessage(`Emailing ${order.orderNumber} PDF...`, "");
 
-  window.location.href = `mailto:thedominoinn@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  try {
+    const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/email`, {
+      method: "POST"
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Email could not be sent.");
+
+    setMessage(`Emailed ${data.pdfFileName} to The Domin Inn.`, "success");
+  } catch (error) {
+    setMessage(error.message, "error");
+  }
 }
 
 function printOrder(orderId) {

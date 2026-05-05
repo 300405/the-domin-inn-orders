@@ -204,6 +204,11 @@ const server = http.createServer(async (request, response) => {
       return sendJson(response, 200, deleteOrder(decodeURIComponent(url.pathname.replace("/api/orders/", ""))));
     }
 
+    if (request.method === "POST" && url.pathname.startsWith("/api/orders/") && url.pathname.endsWith("/email")) {
+      const orderId = decodeURIComponent(url.pathname.replace("/api/orders/", "").replace(/\/email$/, ""));
+      return sendJson(response, 200, await emailSavedOrder(orderId));
+    }
+
     if (request.method === "POST" && url.pathname === "/api/orders") {
       return sendJson(response, 201, await createOrder(await readJson(request)));
     }
@@ -293,9 +298,17 @@ function writeOrder(order) {
   return { jsonPath, pdfPath };
 }
 
-async function sendOrderNotification(order, files) {
+async function sendOrderNotification(order, files, options = {}) {
   const required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "ORDER_NOTIFY_EMAIL"];
-  if (!required.every((key) => process.env[key])) return;
+  const missing = required.filter((key) => !process.env[key]);
+  if (missing.length) {
+    if (options.throwOnError) {
+      const error = new Error(`Email is missing Render setting: ${missing.join(", ")}`);
+      error.statusCode = 500;
+      throw error;
+    }
+    return false;
+  }
 
   try {
     const nodemailer = require("nodemailer");
@@ -331,31 +344,73 @@ async function sendOrderNotification(order, files) {
         }
       ]
     });
+    return true;
   } catch (error) {
+    if (options.throwOnError) {
+      error.statusCode = 500;
+      error.publicMessage = `Email could not be sent: ${error.message}`;
+      throw error;
+    }
     console.error(`Order notification failed: ${error.message}`);
+    return false;
   }
 }
 
-function deleteOrder(orderId) {
-  const jsonFiles = fs.readdirSync(ORDERS_DIR).filter((fileName) => fileName.endsWith(".json"));
-  const fileName = jsonFiles.find((candidate) => {
-    const order = JSON.parse(fs.readFileSync(path.join(ORDERS_DIR, candidate), "utf8"));
-    return order.id === orderId;
-  });
-
-  if (!fileName) {
+async function emailSavedOrder(orderId) {
+  const savedOrder = findSavedOrder(orderId);
+  if (!savedOrder) {
     const error = new Error("Order not found.");
     error.statusCode = 404;
     throw error;
   }
 
-  const baseName = fileName.replace(/\.json$/, "");
+  const files = {
+    pdfPath: path.join(ORDERS_DIR, savedOrder.pdfFileName)
+  };
+
+  await sendOrderNotification(savedOrder.order, files, { throwOnError: true });
+  return {
+    sent: true,
+    orderNumber: savedOrder.order.orderNumber,
+    pdfFileName: savedOrder.pdfFileName
+  };
+}
+
+function deleteOrder(orderId) {
+  const savedOrder = findSavedOrder(orderId);
+
+  if (!savedOrder) {
+    const error = new Error("Order not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const baseName = savedOrder.baseName;
   for (const ext of [".json", ".pdf"]) {
     const filePath = path.join(ORDERS_DIR, `${baseName}${ext}`);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   }
 
   return { deleted: true, orderId };
+}
+
+function findSavedOrder(orderId) {
+  const jsonFiles = fs.readdirSync(ORDERS_DIR).filter((fileName) => fileName.endsWith(".json"));
+
+  for (const fileName of jsonFiles) {
+    const filePath = path.join(ORDERS_DIR, fileName);
+    const order = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    if (order.id === orderId) {
+      const baseName = fileName.replace(/\.json$/, "");
+      return {
+        order,
+        baseName,
+        pdfFileName: `${baseName}.pdf`
+      };
+    }
+  }
+
+  return null;
 }
 
 function buildOrderPdf(order) {
