@@ -43,12 +43,14 @@ New orders can email the PDF automatically when SMTP variables are set:
 
 ```sh
 ORDER_NOTIFY_EMAIL=thedominoinn@gmail.com
-SMTP_HOST=smtp.example.com
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465
 SMTP_SECURE=true
-SMTP_USER=thedomin@virginmedia.com
-SMTP_PASS=your-email-app-password
-SMTP_FROM=thedomin@virginmedia.com
+SMTP_USER=thedominoinn@gmail.com
+SMTP_PASS=your-gmail-app-password
+SMTP_FROM=thedominoinn@gmail.com
 ```
+
+For Gmail, turn on 2-Step Verification in the Google account, then create an App Password for this app. Use that 16-character App Password as `SMTP_PASS`; do not use the normal Gmail login password.
 
 If these are not set, orders still save normally but no email is sent.
