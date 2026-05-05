@@ -275,7 +275,8 @@ function readOrders() {
       const baseName = fileName.replace(/\.json$/, "");
       return {
         ...order,
-        pdfPath: `/orders/${baseName}.pdf`
+        pdfPath: `/orders/${baseName}.pdf`,
+        pdfFileName: `${baseName}.pdf`
       };
     })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -322,7 +323,7 @@ async function sendOrderNotification(order, files) {
       ].filter(Boolean).join("\n"),
       attachments: [
         {
-          filename: `${order.orderNumber}.pdf`,
+          filename: `${path.basename(files.pdfPath)}`,
           path: files.pdfPath
         }
       ]

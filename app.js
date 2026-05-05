@@ -306,7 +306,7 @@ function renderOrderPreview() {
         <span>${escapeHtml(order.requestedBy)}</span>
       </div>
       <div class="preview-actions">
-        ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener">PDF</a>` : ""}
+        ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener" download="${escapeHtml(getOrderPdfName(order))}">${escapeHtml(getOrderPdfName(order))}</a>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="email" data-order-id="${escapeHtml(order.id)}">Email</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="print" data-order-id="${escapeHtml(order.id)}">Print</button>` : ""}
         <button class="order-action is-danger" type="button" data-action="delete" data-order-id="${escapeHtml(order.id)}">Delete</button>
@@ -329,6 +329,12 @@ function renderOrderPreview() {
       if (button.dataset.action === "delete") deleteSavedOrder(button.dataset.orderId);
     });
   });
+}
+
+function getOrderPdfName(order) {
+  if (order.pdfFileName) return order.pdfFileName;
+  const datePart = order.createdAt ? order.createdAt.slice(0, 10) : "order";
+  return `${order.orderNumber}-${datePart}.pdf`;
 }
 
 function emailOrder(orderId) {
