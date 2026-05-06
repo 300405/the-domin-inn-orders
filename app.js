@@ -157,23 +157,7 @@ function renderCatalog() {
             </div>
           </div>
           <h3>${escapeHtml(item.name)}</h3>
-          <p>${escapeHtml(item.packSize)}</p>
         </header>
-
-        <dl class="stock-metrics">
-          <div>
-            <dt>On hand</dt>
-            <dd>${item.onHand}</dd>
-          </div>
-          <div>
-            <dt>Par</dt>
-            <dd>${item.parLevel}</dd>
-          </div>
-          <div>
-            <dt>Pack</dt>
-            <dd>${escapeHtml(item.packSize)}</dd>
-          </div>
-        </dl>
 
         <div class="order-row">
           <div class="catalog-stepper" aria-label="Quantity for ${escapeHtml(item.name)}">
@@ -198,7 +182,7 @@ function filteredItems() {
   return state.catalog
     .filter((item) => {
       const categoryMatch = !state.activeCategory || item.category === state.activeCategory;
-      const haystack = [item.name, item.category, item.packSize].join(" ").toLowerCase();
+      const haystack = [item.name, item.category].join(" ").toLowerCase();
       const searchMatch = !state.search || haystack.includes(state.search);
       return categoryMatch && searchMatch;
     })
@@ -237,7 +221,6 @@ function renderCart() {
     <div class="cart-line">
       <div>
         <strong>${escapeHtml(line.name)}</strong>
-        <span>${escapeHtml(line.packSize)}</span>
       </div>
       <div class="line-controls">
         <button class="quantity-button" type="button" data-action="decrement" data-item-id="${escapeHtml(line.id)}" aria-label="Remove one ${escapeHtml(line.name)}">-</button>
@@ -315,7 +298,6 @@ function renderOrderPreview() {
       ${order.lineItems.map((line) => `
         <li>
           <span>${escapeHtml(line.quantity)} x ${escapeHtml(line.name)}</span>
-          <small>${escapeHtml(line.packSize || "")}</small>
         </li>
       `).join("")}
     </ul>
@@ -456,7 +438,6 @@ async function submitOrder() {
           id: line.id,
           name: line.name,
           sku: line.sku,
-          packSize: line.packSize,
           supplier: line.supplier,
           quantity: line.quantity,
           unitCost: line.unitCost

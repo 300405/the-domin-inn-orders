@@ -292,7 +292,6 @@ async function createOrder(payload) {
       id: cleanText(line.id),
       name: cleanText(line.name),
       sku: cleanText(line.sku),
-      packSize: cleanText(line.packSize),
       supplier: cleanText(line.supplier),
       quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
       unitCost: Number(line.unitCost || 0)
@@ -523,8 +522,7 @@ function buildOrderPdf(order) {
     "",
     "Items",
     ...order.lineItems.flatMap((line) => [
-      `${line.quantity} x ${line.name}`,
-      `  Pack: ${line.packSize || "Each"}`
+      `${line.quantity} x ${line.name}`
     ]),
   ].filter((line) => line !== "");
 
