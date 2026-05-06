@@ -39,19 +39,6 @@
     "unitCost": 0.96
   },
   {
-    "id": "baby-budweiser-330",
-    "name": "Budweiser 330ml",
-    "sku": "BABY-BUDWEISER-330",
-    "category": "Bottles",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 23.45
-  },
-  {
     "id": "square-budwiser",
     "name": "Budwiser",
     "sku": "",
@@ -117,19 +104,6 @@
     "unitCost": 1.01
   },
   {
-    "id": "baby-corona-330",
-    "name": "Corona 330ml",
-    "sku": "BABY-CORONA-330",
-    "category": "Bottles",
-    "supplier": "Baby Bottles",
-    "packSize": "18 pack",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 2,
-    "parLevel": 3,
-    "unitCost": 17.27
-  },
-  {
     "id": "square-desperados",
     "name": "Desperados",
     "sku": "",
@@ -141,32 +115,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 1.32
-  },
-  {
-    "id": "baby-desperados-330",
-    "name": "Desperados 330ml",
-    "sku": "BABY-DESPERADOS-330",
-    "category": "Bottles",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 31.85
-  },
-  {
-    "id": "baby-doombar-500",
-    "name": "Doom Bar 500ml",
-    "sku": "BABY-DOOMBAR-500",
-    "category": "Bottles",
-    "supplier": "Baby Bottles",
-    "packSize": "8 pack",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 13.58
   },
   {
     "id": "square-doombar",
@@ -193,19 +141,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 1.88
-  },
-  {
-    "id": "baby-guinness-zero",
-    "name": "Guinness 0.0% Pint Cans 538ml",
-    "sku": "BABY-GUINNESS-ZERO",
-    "category": "Bottles",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 38
   },
   {
     "id": "square-hardy-s-vr-chardonnay",
@@ -297,19 +232,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 0.77
-  },
-  {
-    "id": "baby-heineken-zero",
-    "name": "Heineken 0.0 330ml",
-    "sku": "BABY-HEINEKEN-ZERO",
-    "category": "Bottles",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 19.25
   },
   {
     "id": "square-inchs",
@@ -414,19 +336,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 1.77
-  },
-  {
-    "id": "baby-newcastle-brown-550",
-    "name": "Newcastle Brown Ale 550ml",
-    "sku": "BABY-NEWCASTLE-BROWN-550",
-    "category": "Bottles",
-    "supplier": "Baby Bottles",
-    "packSize": "1 dozen",
-    "onHand": 0,
-    "reorderPoint": 2,
-    "reorderQuantity": 3,
-    "parLevel": 5,
-    "unitCost": 21.43
   },
   {
     "id": "square-old-mout",
@@ -897,19 +806,6 @@
     "unitCost": 0
   },
   {
-    "id": "square-kp-dry-roasted-peanuts",
-    "name": "KP Dry Roasted Peanuts",
-    "sku": "",
-    "category": "Snacks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.55
-  },
-  {
     "id": "snack-kp-salted-nuts",
     "name": "KP Salted Nuts",
     "sku": "SNACK-KP-SALTED-NUTS",
@@ -921,19 +817,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 0
-  },
-  {
-    "id": "square-kp-salted-peanuts",
-    "name": "KP Salted Peanuts",
-    "sku": "",
-    "category": "Snacks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.55
   },
   {
     "id": "square-milky-bar",
@@ -960,19 +843,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 0
-  },
-  {
-    "id": "square-mini-cheddars-original",
-    "name": "Mini Cheddars Original",
-    "sku": "",
-    "category": "Snacks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.63
   },
   {
     "id": "square-paparika-pringles",
@@ -1196,19 +1066,6 @@
     "unitCost": 1.19
   },
   {
-    "id": "square-coca-cola",
-    "name": "Coca Cola",
-    "sku": "",
-    "category": "Soft Drinks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.46
-  },
-  {
     "id": "baby-coke-can",
     "name": "Coca Cola Can",
     "sku": "BABY-COKE-CAN",
@@ -1220,19 +1077,6 @@
     "reorderQuantity": 4,
     "parLevel": 6,
     "unitCost": 10.99
-  },
-  {
-    "id": "square-coke-zero",
-    "name": "Coke Zero",
-    "sku": "",
-    "category": "Soft Drinks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.46
   },
   {
     "id": "baby-coke-zero-can",
@@ -1261,19 +1105,6 @@
     "unitCost": 0.61
   },
   {
-    "id": "baby-diet-7up-can",
-    "name": "Diet 7UP Can",
-    "sku": "BABY-DIET-7UP-CAN",
-    "category": "Soft Drinks",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 10.67
-  },
-  {
     "id": "square-diet-coke",
     "name": "Diet Coke",
     "sku": "",
@@ -1285,19 +1116,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 0.42
-  },
-  {
-    "id": "baby-diet-coke-can",
-    "name": "Diet Coke Can 330ml",
-    "sku": "BABY-DIET-COKE-CAN",
-    "category": "Soft Drinks",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 2,
-    "reorderQuantity": 3,
-    "parLevel": 5,
-    "unitCost": 9.99
   },
   {
     "id": "baby-bib-energy",
@@ -1417,19 +1235,6 @@
     "unitCost": 0.4
   },
   {
-    "id": "baby-fanta-lemon-can",
-    "name": "Fanta Lemon Can",
-    "sku": "BABY-FANTA-LEMON-CAN",
-    "category": "Soft Drinks",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 9.64
-  },
-  {
     "id": "square-fanta-orange",
     "name": "Fanta Orange",
     "sku": "",
@@ -1441,19 +1246,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 0.41
-  },
-  {
-    "id": "baby-fanta-orange-can",
-    "name": "Fanta Orange Can",
-    "sku": "BABY-FANTA-ORANGE-CAN",
-    "category": "Soft Drinks",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 9.64
   },
   {
     "id": "square-irn-bru",
@@ -1519,32 +1311,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 0.82
-  },
-  {
-    "id": "baby-j2o-orange-passion",
-    "name": "J2O Orange & Passionfruit 275ml",
-    "sku": "BABY-J2O-ORANGE-PASSION",
-    "category": "Soft Drinks",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 17
-  },
-  {
-    "id": "square-lemonade-postmix",
-    "name": "Lemonade postmix",
-    "sku": "",
-    "category": "Soft Drinks",
-    "supplier": "",
-    "packSize": "Dash",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.15
   },
   {
     "id": "square-lime-cordial",
@@ -1651,45 +1417,6 @@
     "unitCost": 0.36
   },
   {
-    "id": "baby-pepsi-max-can",
-    "name": "Pepsi Max Can",
-    "sku": "BABY-PEPSI-MAX-CAN",
-    "category": "Soft Drinks",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 2,
-    "parLevel": 3,
-    "unitCost": 10.3
-  },
-  {
-    "id": "square-pepsi-max-post-mix",
-    "name": "Pepsi Max post mix",
-    "sku": "",
-    "category": "Soft Drinks",
-    "supplier": "",
-    "packSize": "Dash",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.15
-  },
-  {
-    "id": "square-pepsi-post-mix",
-    "name": "Pepsi post mix",
-    "sku": "",
-    "category": "Soft Drinks",
-    "supplier": "",
-    "packSize": "Dash",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.28
-  },
-  {
     "id": "square-r-whites-lemonade",
     "name": "R whites Lemonade",
     "sku": "",
@@ -1703,19 +1430,6 @@
     "unitCost": 0.36
   },
   {
-    "id": "baby-rwhites-lemonade",
-    "name": "R Whites Lemonade Can",
-    "sku": "BABY-RWHITES-LEMONADE",
-    "category": "Soft Drinks",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 2,
-    "parLevel": 3,
-    "unitCost": 10.18
-  },
-  {
     "id": "square-red-bull",
     "name": "Red Bull",
     "sku": "",
@@ -1727,19 +1441,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 0.88
-  },
-  {
-    "id": "baby-red-bull-250",
-    "name": "Red Bull 250ml Can",
-    "sku": "BABY-RED-BULL-250",
-    "category": "Soft Drinks",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 21.24
   },
   {
     "id": "square-sauv-blanc",
@@ -1768,19 +1469,6 @@
     "unitCost": 0.59
   },
   {
-    "id": "baby-schweppes-orange",
-    "name": "Schweppes Orange Juice 200ml",
-    "sku": "BABY-SCHWEPPES-ORANGE",
-    "category": "Soft Drinks",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 14.49
-  },
-  {
     "id": "square-schweppes-pineapple",
     "name": "Schweppes Pineapple",
     "sku": "",
@@ -1794,32 +1482,6 @@
     "unitCost": 0.55
   },
   {
-    "id": "square-schweppes-slimline-tonic",
-    "name": "Schweppes Slimline Tonic",
-    "sku": "",
-    "category": "Soft Drinks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.55
-  },
-  {
-    "id": "baby-schweppes-tonic",
-    "name": "Schweppes Tonic 200ml",
-    "sku": "BABY-SCHWEPPES-TONIC",
-    "category": "Soft Drinks",
-    "supplier": "Baby Bottles",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 13.99
-  },
-  {
     "id": "square-slimline-tonic-post-mix",
     "name": "Slimline Tonic post mix",
     "sku": "",
@@ -1831,32 +1493,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 0.15
-  },
-  {
-    "id": "square-soda",
-    "name": "Soda",
-    "sku": "",
-    "category": "Soft Drinks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.1
-  },
-  {
-    "id": "square-soda-water",
-    "name": "Soda water",
-    "sku": "",
-    "category": "Soft Drinks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.1
   },
   {
     "id": "square-vimto-free",
@@ -2081,7 +1717,7 @@
   },
   {
     "id": "square-bacardi-caribbean-spiced",
-    "name": "Bacardi\u0301 Caribbean Spiced",
+    "name": "Bacardí Caribbean Spiced",
     "sku": "",
     "category": "Spirits",
     "supplier": "",
@@ -2533,32 +2169,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 28
-  },
-  {
-    "id": "square-gordons-dry-gin",
-    "name": "Gordons Dry Gin",
-    "sku": "",
-    "category": "Spirits",
-    "supplier": "",
-    "packSize": "Single",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 28
-  },
-  {
-    "id": "square-gordons-pink-gin",
-    "name": "Gordons Pink Gin",
-    "sku": "",
-    "category": "Spirits",
-    "supplier": "",
-    "packSize": "Single",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 29
   },
   {
     "id": "baby-gordons-pink-15",
@@ -3042,19 +2652,6 @@
     "unitCost": 26.48
   },
   {
-    "id": "square-smirnoff-vodka",
-    "name": "Smirnoff Vodka",
-    "sku": "",
-    "category": "Spirits",
-    "supplier": "",
-    "packSize": "Single",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 25.72
-  },
-  {
     "id": "square-sourz-apple",
     "name": "Sourz Apple",
     "sku": "",
@@ -3315,19 +2912,6 @@
     "unitCost": 1.81
   },
   {
-    "id": "sky-bear-star-chardonnay",
-    "name": "Bear & Star Chardonnay 187ml",
-    "sku": "SKY-BEAR-STAR-CHARDONNAY",
-    "category": "Wine",
-    "supplier": "Sky Wines",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 39.33
-  },
-  {
     "id": "square-bear-star-merlot",
     "name": "Bear & Star Merlot",
     "sku": "",
@@ -3339,19 +2923,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 1.81
-  },
-  {
-    "id": "sky-bear-star-merlot",
-    "name": "Bear & Star Merlot 187ml",
-    "sku": "SKY-BEAR-STAR-MERLOT",
-    "category": "Wine",
-    "supplier": "Sky Wines",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 39.33
   },
   {
     "id": "square-bear-star-pinot-grigio",
@@ -3406,19 +2977,6 @@
     "unitCost": 1.81
   },
   {
-    "id": "sky-bear-star-zinfandel",
-    "name": "Bear & Star White Zinfandel 187ml",
-    "sku": "SKY-BEAR-STAR-ZINFANDEL",
-    "category": "Wine",
-    "supplier": "Sky Wines",
-    "packSize": "2 dozen",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 39.33
-  },
-  {
     "id": "square-bear-star-zinfandel-rose",
     "name": "Bear & Star Zinfandel Rose",
     "sku": "",
@@ -3443,31 +3001,5 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 56.22
-  },
-  {
-    "id": "baby-flowerhead-chardonnay",
-    "name": "Flowerhead Chardonnay 75cl",
-    "sku": "BABY-FLOWERHEAD-CHARDONN",
-    "category": "Wine",
-    "supplier": "Baby Bottles",
-    "packSize": "Bottle",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 2,
-    "parLevel": 3,
-    "unitCost": 0.01
-  },
-  {
-    "id": "baby-flowerhead-pinot-blush",
-    "name": "Flowerhead Pinot Grigio Blush 75cl",
-    "sku": "BABY-FLOWERHEAD-PINOT-BL",
-    "category": "Wine",
-    "supplier": "Baby Bottles",
-    "packSize": "Bottle",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 2,
-    "parLevel": 3,
-    "unitCost": 0.01
   }
 ]

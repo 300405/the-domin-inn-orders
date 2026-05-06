@@ -10,10 +10,49 @@ const DATA_DIR = process.env.DATA_DIR || ROOT;
 const ORDERS_DIR = path.join(DATA_DIR, "orders");
 const STOCK_FILE = path.join(DATA_DIR, "stock-items.json");
 const SEED_STOCK_FILE = path.join(ROOT, "stock-items.json");
+const REMOVED_DUPLICATE_STOCK_IDS = new Set([
+  "square-smirnoff-vodka",
+  "square-gordons-pink-gin",
+  "square-gordons-dry-gin",
+  "baby-budweiser-330",
+  "baby-corona-330",
+  "baby-desperados-330",
+  "baby-doombar-500",
+  "baby-guinness-zero",
+  "baby-heineken-zero",
+  "baby-newcastle-brown-550",
+  "square-kp-dry-roasted-peanuts",
+  "square-kp-salted-peanuts",
+  "square-mini-cheddars-original",
+  "square-coca-cola",
+  "square-coke-zero",
+  "baby-diet-7up-can",
+  "baby-diet-coke-can",
+  "baby-fanta-lemon-can",
+  "baby-fanta-orange-can",
+  "baby-j2o-orange-passion",
+  "square-lemonade-postmix",
+  "baby-pepsi-max-can",
+  "square-pepsi-max-post-mix",
+  "square-pepsi-post-mix",
+  "baby-rwhites-lemonade",
+  "baby-red-bull-250",
+  "baby-schweppes-orange",
+  "square-schweppes-slimline-tonic",
+  "baby-schweppes-tonic",
+  "square-soda",
+  "square-soda-water",
+  "sky-bear-star-chardonnay",
+  "sky-bear-star-merlot",
+  "baby-flowerhead-chardonnay",
+  "sky-bear-star-zinfandel",
+  "baby-flowerhead-pinot-blush"
+]);
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(ORDERS_DIR, { recursive: true });
 seedDataFiles();
+pruneRemovedDuplicateStockItems();
 
 const defaultStockItems = [
   stock("sky-john-smiths-22gl", "22gl John Smiths Smooth", "Kegs", "Sky Wines", "Each", 201.76, 1),
@@ -155,6 +194,14 @@ function seedDataFiles() {
       fs.copyFileSync(path.join(seedOrdersDir, fileName), path.join(ORDERS_DIR, fileName));
     }
   }
+}
+
+function pruneRemovedDuplicateStockItems() {
+  if (!fs.existsSync(STOCK_FILE)) return;
+
+  const items = JSON.parse(fs.readFileSync(STOCK_FILE, "utf8"));
+  const nextItems = items.filter((item) => !REMOVED_DUPLICATE_STOCK_IDS.has(item.id));
+  if (nextItems.length !== items.length) writeStockItems(nextItems);
 }
 
 function isAuthorised(request) {
