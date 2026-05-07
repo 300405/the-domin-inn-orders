@@ -513,6 +513,8 @@ function findSavedOrder(orderId) {
 }
 
 function buildOrderPdf(order) {
+  const lineHeight = 18;
+  const linesPerPage = 38;
   const rows = [
     "Stock Order",
     `Order: ${order.orderNumber}`,
@@ -526,18 +528,30 @@ function buildOrderPdf(order) {
     ]),
   ].filter((line) => line !== "");
 
-  const textCommands = rows.map((line, index) => {
-    const y = 770 - index * 18;
-    return `BT /F1 11 Tf 50 ${Math.max(50, y)} Td (${escapePdfText(line)}) Tj ET`;
-  }).join("\n");
+  const pages = [];
+  for (let index = 0; index < rows.length; index += linesPerPage) {
+    pages.push(rows.slice(index, index + linesPerPage));
+  }
 
-  const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    `<< /Length ${Buffer.byteLength(textCommands)} >>\nstream\n${textCommands}\nendstream`
-  ];
+  const fontObjectNumber = 3 + pages.length * 2;
+  const objects = ["<< /Type /Catalog /Pages 2 0 R >>", ""];
+  const pageRefs = [];
+
+  pages.forEach((pageRows) => {
+    const pageObjectNumber = objects.length + 1;
+    const contentObjectNumber = objects.length + 2;
+    const textCommands = pageRows.map((line, index) => {
+      const y = 770 - index * lineHeight;
+      return `BT /F1 11 Tf 50 ${y} Td (${escapePdfText(line)}) Tj ET`;
+    }).join("\n");
+
+    pageRefs.push(`${pageObjectNumber} 0 R`);
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontObjectNumber} 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`);
+    objects.push(`<< /Length ${Buffer.byteLength(textCommands)} >>\nstream\n${textCommands}\nendstream`);
+  });
+
+  objects[1] = `<< /Type /Pages /Kids [${pageRefs.join(" ")}] /Count ${pages.length} >>`;
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
 
   let pdf = "%PDF-1.4\n";
   const offsets = [0];
