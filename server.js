@@ -316,6 +316,7 @@ function readOrders() {
       const filePath = path.join(ORDERS_DIR, fileName);
       const order = JSON.parse(fs.readFileSync(filePath, "utf8"));
       const baseName = fileName.replace(/\.json$/, "");
+      fs.writeFileSync(path.join(ORDERS_DIR, `${baseName}.pdf`), buildOrderPdf(order));
       return {
         ...order,
         pdfPath: `/orders/${baseName}.pdf`,
