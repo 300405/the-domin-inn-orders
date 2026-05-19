@@ -53,6 +53,7 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(ORDERS_DIR, { recursive: true });
 seedDataFiles();
 pruneRemovedDuplicateStockItems();
+reconcileStockCatalogue();
 
 const defaultStockItems = [
   stock("sky-john-smiths-22gl", "22gl John Smiths Smooth", "Kegs", "Sky Wines", "Each", 201.76, 1),
@@ -202,6 +203,37 @@ function pruneRemovedDuplicateStockItems() {
   const items = JSON.parse(fs.readFileSync(STOCK_FILE, "utf8"));
   const nextItems = items.filter((item) => !REMOVED_DUPLICATE_STOCK_IDS.has(item.id));
   if (nextItems.length !== items.length) writeStockItems(nextItems);
+}
+
+function reconcileStockCatalogue() {
+  const renameMap = new Map([
+    ["Bear & Star Chardonay", "FlowerHead Chardonnay"],
+    ["Bear & Star Merlot", "FlowerHead Merlot"],
+    ["Bear & Star Pinot Grigio", "FlowerHead Pinot Grigio"],
+    ["Bear & Star Pinot Grigio 187ml", "FlowerHead Pinot Grigio 187ml"],
+    ["Bear & Star Sauvignon Blanc", "FlowerHead Sauvignon Blanc"],
+    ["Bear & Star Shiraz", "FlowerHead Shiraz"],
+    ["Bear & Star Zinfandel Rose", "FlowerHead Zinfandel Rose"]
+  ]);
+  const items = readStockItems();
+  let changed = false;
+
+  for (const item of items) {
+    if (renameMap.has(item.name)) {
+      item.name = renameMap.get(item.name);
+      changed = true;
+    } else if (item.name.includes("Bear & Star")) {
+      item.name = item.name.replaceAll("Bear & Star", "FlowerHead");
+      changed = true;
+    }
+  }
+
+  if (!items.some((item) => item.id === "britvic-slimline-tonic")) {
+    items.push(stock("britvic-slimline-tonic", "Britvic Slimline Tonic", "Soft Drinks", "", "Regular", 0, 1));
+    changed = true;
+  }
+
+  if (changed) writeStockItems(items);
 }
 
 function isAuthorised(request) {

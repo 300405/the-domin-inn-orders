@@ -1495,6 +1495,19 @@
     "unitCost": 0.15
   },
   {
+    "id": "britvic-slimline-tonic",
+    "name": "Britvic Slimline Tonic",
+    "sku": "BRITVIC-SLIMLINE-TONIC",
+    "category": "Soft Drinks",
+    "supplier": "",
+    "packSize": "Regular",
+    "onHand": 0,
+    "reorderPoint": 1,
+    "reorderQuantity": 1,
+    "parLevel": 2,
+    "unitCost": 0
+  },
+  {
     "id": "square-vimto-free",
     "name": "Vimto Free",
     "sku": "",
@@ -2900,7 +2913,7 @@
   },
   {
     "id": "square-bear-star-chardonay",
-    "name": "Bear & Star Chardonay",
+    "name": "FlowerHead Chardonnay",
     "sku": "",
     "category": "Wine",
     "supplier": "",
@@ -2913,7 +2926,7 @@
   },
   {
     "id": "square-bear-star-merlot",
-    "name": "Bear & Star Merlot",
+    "name": "FlowerHead Merlot",
     "sku": "",
     "category": "Wine",
     "supplier": "",
@@ -2926,7 +2939,7 @@
   },
   {
     "id": "square-bear-star-pinot-grigio",
-    "name": "Bear & Star Pinot Grigio",
+    "name": "FlowerHead Pinot Grigio",
     "sku": "",
     "category": "Wine",
     "supplier": "",
@@ -2939,7 +2952,7 @@
   },
   {
     "id": "sky-bear-star-pinot",
-    "name": "Bear & Star Pinot Grigio 187ml",
+    "name": "FlowerHead Pinot Grigio 187ml",
     "sku": "SKY-BEAR-STAR-PINOT",
     "category": "Wine",
     "supplier": "Sky Wines",
@@ -2952,7 +2965,7 @@
   },
   {
     "id": "square-bear-star-sauvignon-blanc",
-    "name": "Bear & Star Sauvignon Blanc",
+    "name": "FlowerHead Sauvignon Blanc",
     "sku": "",
     "category": "Wine",
     "supplier": "",
@@ -2965,7 +2978,7 @@
   },
   {
     "id": "square-bear-star-shiraz",
-    "name": "Bear & Star Shiraz",
+    "name": "FlowerHead Shiraz",
     "sku": "",
     "category": "Wine",
     "supplier": "",
@@ -2978,7 +2991,7 @@
   },
   {
     "id": "square-bear-star-zinfandel-rose",
-    "name": "Bear & Star Zinfandel Rose",
+    "name": "FlowerHead Zinfandel Rose",
     "sku": "",
     "category": "Wine",
     "supplier": "",
