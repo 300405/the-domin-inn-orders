@@ -233,6 +233,11 @@ function reconcileStockCatalogue() {
     changed = true;
   }
 
+  if (!items.some((item) => item.id === "kopparberg-strawberry-lime-0-0")) {
+    items.push(stock("kopparberg-strawberry-lime-0-0", "Kopparberg Strawberry & Lime 0.0", "Bottles", "", "Regular", 0, 1));
+    changed = true;
+  }
+
   if (changed) writeStockItems(items);
 }
 

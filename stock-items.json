@@ -286,6 +286,19 @@
     "unitCost": 25.4
   },
   {
+    "id": "kopparberg-strawberry-lime-0-0",
+    "name": "Kopparberg Strawberry & Lime 0.0",
+    "sku": "KOPPARBERG-STRAWBERRY-00",
+    "category": "Bottles",
+    "supplier": "",
+    "packSize": "Regular",
+    "onHand": 0,
+    "reorderPoint": 1,
+    "reorderQuantity": 1,
+    "parLevel": 2,
+    "unitCost": 0
+  },
+  {
     "id": "square-madri-0-0",
     "name": "Madri 0.0",
     "sku": "",
