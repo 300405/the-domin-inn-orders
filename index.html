@@ -62,6 +62,7 @@
         </div>
         <div class="toolbar">
           <input id="searchInput" type="search" placeholder="Search item">
+          <button class="ghost-button" id="settingsButton" type="button">Settings</button>
         </div>
       </header>
 
@@ -94,6 +95,55 @@
       <button class="submit-button" id="submitOrder" type="button">Submit stock order</button>
       <p class="submit-message" id="submitMessage" role="status"></p>
     </aside>
+  </div>
+
+  <div class="settings-overlay" id="settingsOverlay" hidden>
+    <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="settings-head">
+        <div>
+          <p class="eyeline">Catalogue settings</p>
+          <h2 id="settingsTitle">Update items</h2>
+        </div>
+        <button class="ghost-button" id="closeSettings" type="button">Close</button>
+      </div>
+
+      <div class="settings-grid">
+        <form class="settings-card" id="addItemForm">
+          <h3>Add item</h3>
+          <label>
+            Item name
+            <input id="settingsAddName" type="text" autocomplete="off" placeholder="New stock item">
+          </label>
+          <label>
+            Category
+            <select id="settingsAddCategory"></select>
+          </label>
+          <button class="submit-button" type="submit">Add item</button>
+        </form>
+
+        <form class="settings-card" id="editItemForm">
+          <h3>Change item</h3>
+          <label>
+            Pick item
+            <select id="settingsEditItem"></select>
+          </label>
+          <label>
+            Item name
+            <input id="settingsEditName" type="text" autocomplete="off">
+          </label>
+          <label>
+            Category
+            <select id="settingsEditCategory"></select>
+          </label>
+          <div class="settings-actions">
+            <button class="submit-button" type="submit">Save changes</button>
+            <button class="order-action is-danger" id="settingsDeleteItem" type="button">Delete item</button>
+          </div>
+        </form>
+      </div>
+
+      <p class="submit-message" id="settingsMessage" role="status"></p>
+    </section>
   </div>
 
   <template id="emptyCartTemplate">

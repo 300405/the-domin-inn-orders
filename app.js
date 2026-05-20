@@ -25,7 +25,19 @@ const els = {
   submitMessage: document.querySelector("#submitMessage"),
   neededBy: document.querySelector("#neededBy"),
   orderNote: document.querySelector("#orderNote"),
-  emptyCartTemplate: document.querySelector("#emptyCartTemplate")
+  emptyCartTemplate: document.querySelector("#emptyCartTemplate"),
+  settingsButton: document.querySelector("#settingsButton"),
+  settingsOverlay: document.querySelector("#settingsOverlay"),
+  closeSettings: document.querySelector("#closeSettings"),
+  addItemForm: document.querySelector("#addItemForm"),
+  editItemForm: document.querySelector("#editItemForm"),
+  settingsAddName: document.querySelector("#settingsAddName"),
+  settingsAddCategory: document.querySelector("#settingsAddCategory"),
+  settingsEditItem: document.querySelector("#settingsEditItem"),
+  settingsEditName: document.querySelector("#settingsEditName"),
+  settingsEditCategory: document.querySelector("#settingsEditCategory"),
+  settingsDeleteItem: document.querySelector("#settingsDeleteItem"),
+  settingsMessage: document.querySelector("#settingsMessage")
 };
 
 init();
@@ -52,6 +64,15 @@ function bindEvents() {
 
   els.refreshOrders.addEventListener("click", loadOrders);
   els.submitOrder.addEventListener("click", submitOrder);
+  els.settingsButton.addEventListener("click", openSettings);
+  els.closeSettings.addEventListener("click", closeSettings);
+  els.settingsOverlay.addEventListener("click", (event) => {
+    if (event.target === els.settingsOverlay) closeSettings();
+  });
+  els.addItemForm.addEventListener("submit", addSettingsItem);
+  els.editItemForm.addEventListener("submit", saveSettingsItem);
+  els.settingsEditItem.addEventListener("change", fillSettingsItem);
+  els.settingsDeleteItem.addEventListener("click", deleteSettingsItem);
 }
 
 async function loadCatalog() {
@@ -187,6 +208,127 @@ function filteredItems() {
       return categoryMatch && searchMatch;
     })
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function openSettings() {
+  renderSettings();
+  setSettingsMessage("", "");
+  els.settingsOverlay.hidden = false;
+  els.settingsAddName.focus();
+}
+
+function closeSettings() {
+  els.settingsOverlay.hidden = true;
+}
+
+function renderSettings() {
+  const categories = state.categories.length
+    ? state.categories.map((category) => category.name)
+    : ["Bottles", "Kegs", "Snacks", "Soft Drinks", "Spirits", "Wine"];
+  const categoryOptions = categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
+  const itemOptions = [...state.catalog]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`)
+    .join("");
+
+  els.settingsAddCategory.innerHTML = categoryOptions;
+  els.settingsEditCategory.innerHTML = categoryOptions;
+  els.settingsEditItem.innerHTML = itemOptions;
+  fillSettingsItem();
+}
+
+function fillSettingsItem() {
+  const item = state.catalog.find((entry) => entry.id === els.settingsEditItem.value);
+  els.settingsEditName.value = item?.name || "";
+  els.settingsEditCategory.value = item?.category || state.categories[0]?.name || "Bottles";
+  els.settingsDeleteItem.disabled = !item;
+}
+
+async function addSettingsItem(event) {
+  event.preventDefault();
+  const name = els.settingsAddName.value.trim();
+  if (!name) {
+    setSettingsMessage("Add an item name first.", "error");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/catalog", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        category: els.settingsAddCategory.value
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Could not add item.");
+
+    els.settingsAddName.value = "";
+    await loadCatalog();
+    render();
+    renderSettings();
+    setSettingsMessage(`${data.item.name} added.`, "success");
+  } catch (error) {
+    setSettingsMessage(error.message, "error");
+  }
+}
+
+async function saveSettingsItem(event) {
+  event.preventDefault();
+  const itemId = els.settingsEditItem.value;
+  const name = els.settingsEditName.value.trim();
+  if (!itemId || !name) {
+    setSettingsMessage("Pick an item and enter a name.", "error");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/catalog/${encodeURIComponent(itemId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        category: els.settingsEditCategory.value
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Could not save item.");
+
+    await loadCatalog();
+    render();
+    renderSettings();
+    els.settingsEditItem.value = data.item.id;
+    fillSettingsItem();
+    setSettingsMessage(`${data.item.name} saved.`, "success");
+  } catch (error) {
+    setSettingsMessage(error.message, "error");
+  }
+}
+
+async function deleteSettingsItem() {
+  const itemId = els.settingsEditItem.value;
+  const item = state.catalog.find((entry) => entry.id === itemId);
+  if (!item) return;
+
+  const confirmed = window.confirm(`Delete ${item.name}? This removes it from the catalogue.`);
+  if (!confirmed) return;
+
+  const response = await fetch(`/api/catalog/${encodeURIComponent(itemId)}`, {
+    method: "DELETE"
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    setSettingsMessage(data.message || "Could not delete item.", "error");
+    return;
+  }
+
+  state.cart.delete(itemId);
+  await loadCatalog();
+  render();
+  renderSettings();
+  setSettingsMessage(`${item.name} deleted.`, "success");
 }
 
 function addToCart(itemId, quantity) {
@@ -472,6 +614,11 @@ function formatDate(value) {
 function setMessage(message, type) {
   els.submitMessage.textContent = message;
   els.submitMessage.className = `submit-message${type ? ` is-${type}` : ""}`;
+}
+
+function setSettingsMessage(message, type) {
+  els.settingsMessage.textContent = message;
+  els.settingsMessage.className = `submit-message${type ? ` is-${type}` : ""}`;
 }
 
 function escapeHtml(value = "") {

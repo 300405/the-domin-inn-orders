@@ -703,7 +703,7 @@
   },
   {
     "id": "square-cheese-onion",
-    "name": "Cheese & Onion",
+    "name": "Walkers Cheese & Onion",
     "sku": "",
     "category": "Snacks",
     "supplier": "",
@@ -716,7 +716,7 @@
   },
   {
     "id": "square-chicken",
-    "name": "Chicken",
+    "name": "Walkers Chicken",
     "sku": "",
     "category": "Snacks",
     "supplier": "",
@@ -832,19 +832,6 @@
     "unitCost": 0
   },
   {
-    "id": "square-milky-bar",
-    "name": "Milky Bar",
-    "sku": "",
-    "category": "Snacks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.45
-  },
-  {
     "id": "snack-mini-cheddars",
     "name": "Mini Cheddars",
     "sku": "SNACK-MINI-CHEDDARS",
@@ -884,19 +871,6 @@
     "unitCost": 0
   },
   {
-    "id": "square-prawn-cocktail",
-    "name": "Prawn Cocktail",
-    "sku": "",
-    "category": "Snacks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.53
-  },
-  {
     "id": "baby-pringles-bbq",
     "name": "Pringles BBQ 12 x 40g",
     "sku": "BABY-PRINGLES-BBQ",
@@ -911,20 +885,7 @@
   },
   {
     "id": "square-ready-salted",
-    "name": "Ready salted",
-    "sku": "",
-    "category": "Snacks",
-    "supplier": "",
-    "packSize": "Regular",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0.53
-  },
-  {
-    "id": "square-salt-vinegar",
-    "name": "Salt & Vinegar",
+    "name": "Walkers Ready Salted",
     "sku": "",
     "category": "Snacks",
     "supplier": "",
@@ -999,32 +960,6 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 0.48
-  },
-  {
-    "id": "snack-walkers-prawn-cocktail",
-    "name": "Walkers Prawn Cocktail",
-    "sku": "SNACK-WALKERS-PRAWN-COCK",
-    "category": "Snacks",
-    "supplier": "Usual snack supplier",
-    "packSize": "Case",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0
-  },
-  {
-    "id": "snack-walkers-salt-vinegar",
-    "name": "Walkers Salt & Vinegar",
-    "sku": "SNACK-WALKERS-SALT-VINEG",
-    "category": "Snacks",
-    "supplier": "Usual snack supplier",
-    "packSize": "Case",
-    "onHand": 0,
-    "reorderPoint": 1,
-    "reorderQuantity": 1,
-    "parLevel": 2,
-    "unitCost": 0
   },
   {
     "id": "square-7up-free",

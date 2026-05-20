@@ -46,7 +46,12 @@ const REMOVED_DUPLICATE_STOCK_IDS = new Set([
   "sky-bear-star-merlot",
   "baby-flowerhead-chardonnay",
   "sky-bear-star-zinfandel",
-  "baby-flowerhead-pinot-blush"
+  "baby-flowerhead-pinot-blush",
+  "square-salt-vinegar",
+  "square-prawn-cocktail",
+  "snack-walkers-salt-vinegar",
+  "snack-walkers-prawn-cocktail",
+  "square-milky-bar"
 ]);
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -170,6 +175,67 @@ function writeStockItems(items) {
   fs.writeFileSync(STOCK_FILE, JSON.stringify(items, null, 2));
 }
 
+function createStockItem(payload) {
+  const name = cleanText(payload.name);
+  const category = cleanText(payload.category) || "Bottles";
+  if (!name) {
+    const error = new Error("Item name is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const items = readStockItems();
+  const baseId = slugify(name);
+  let id = baseId;
+  let suffix = 2;
+  while (items.some((item) => item.id === id)) {
+    id = `${baseId}-${suffix}`;
+    suffix += 1;
+  }
+
+  const item = {
+    id,
+    name,
+    sku: id.toUpperCase().slice(0, 24),
+    category,
+    supplier: "",
+    packSize: "Regular",
+    onHand: 0,
+    reorderPoint: 1,
+    reorderQuantity: 1,
+    parLevel: 2,
+    unitCost: 0
+  };
+
+  items.push(item);
+  writeStockItems(items);
+  return { item };
+}
+
+function updateStockItem(itemId, payload) {
+  const name = cleanText(payload.name);
+  const category = cleanText(payload.category);
+  const items = readStockItems();
+  const item = items.find((entry) => entry.id === itemId);
+
+  if (!item) {
+    const error = new Error("Stock item not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!name) {
+    const error = new Error("Item name is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  item.name = name;
+  if (category) item.category = category;
+  writeStockItems(items);
+  return { item };
+}
+
 function deleteStockItem(itemId) {
   const items = readStockItems();
   const nextItems = items.filter((item) => item.id !== itemId);
@@ -182,6 +248,15 @@ function deleteStockItem(itemId) {
 
   writeStockItems(nextItems);
   return { deleted: true, itemId };
+}
+
+function slugify(value) {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    || `stock-${randomUUID().slice(0, 8)}`;
 }
 
 function seedDataFiles() {
@@ -213,7 +288,10 @@ function reconcileStockCatalogue() {
     ["Bear & Star Pinot Grigio 187ml", "FlowerHead Pinot Grigio 187ml"],
     ["Bear & Star Sauvignon Blanc", "FlowerHead Sauvignon Blanc"],
     ["Bear & Star Shiraz", "FlowerHead Shiraz"],
-    ["Bear & Star Zinfandel Rose", "FlowerHead Zinfandel Rose"]
+    ["Bear & Star Zinfandel Rose", "FlowerHead Zinfandel Rose"],
+    ["Ready salted", "Walkers Ready Salted"],
+    ["Cheese & Onion", "Walkers Cheese & Onion"],
+    ["Chicken", "Walkers Chicken"]
   ]);
   const items = readStockItems();
   let changed = false;
@@ -274,6 +352,14 @@ const server = http.createServer(async (request, response) => {
 
     if (request.method === "GET" && url.pathname === "/api/catalog") {
       return sendJson(response, 200, { items: readStockItems() });
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/catalog") {
+      return sendJson(response, 201, createStockItem(await readJson(request)));
+    }
+
+    if (request.method === "PATCH" && url.pathname.startsWith("/api/catalog/")) {
+      return sendJson(response, 200, updateStockItem(decodeURIComponent(url.pathname.replace("/api/catalog/", "")), await readJson(request)));
     }
 
     if (request.method === "DELETE" && url.pathname.startsWith("/api/catalog/")) {
