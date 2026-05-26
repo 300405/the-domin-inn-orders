@@ -49,6 +49,13 @@
           </div>
           <button class="ghost-button" id="refreshOrders" type="button">Refresh</button>
         </div>
+        <div class="draft-section">
+          <div class="draft-head">
+            <strong>Saved for later</strong>
+            <small>Open on any device</small>
+          </div>
+          <div class="draft-history" id="draftHistory" aria-live="polite"></div>
+        </div>
         <div class="order-history" id="orderHistory" aria-live="polite"></div>
         <div class="order-preview" id="orderPreview"></div>
       </section>
@@ -92,6 +99,7 @@
         </div>
       </div>
 
+      <button class="ghost-button save-draft-button" id="saveDraft" type="button">Save for later</button>
       <button class="submit-button" id="submitOrder" type="button">Submit stock order</button>
       <p class="submit-message" id="submitMessage" role="status"></p>
     </aside>

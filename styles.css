@@ -187,6 +187,31 @@ label {
   gap: 8px;
 }
 
+.draft-section {
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.draft-head strong,
+.draft-head small {
+  display: block;
+}
+
+.draft-head strong {
+  font-size: 0.92rem;
+}
+
+.draft-head small {
+  color: var(--muted);
+}
+
+.draft-history {
+  display: grid;
+  gap: 8px;
+}
+
 .order-file {
   width: 100%;
   border: 1px solid var(--line);
@@ -218,6 +243,15 @@ label {
 .order-file[aria-selected="true"] {
   border-color: var(--accent);
   background: #f1fbf8;
+}
+
+.draft-file {
+  display: grid;
+  gap: 8px;
+}
+
+.draft-file .preview-actions {
+  justify-content: flex-start;
 }
 
 .order-preview {
@@ -575,6 +609,10 @@ textarea {
 .ghost-button {
   padding: 8px 12px;
   font-weight: 850;
+}
+
+.save-draft-button {
+  width: 100%;
 }
 
 .cart-lines {

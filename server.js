@@ -8,6 +8,7 @@ const HOST = process.env.HOST || (process.env.RENDER ? "0.0.0.0" : "127.0.0.1");
 const ROOT = __dirname;
 const DATA_DIR = process.env.DATA_DIR || ROOT;
 const ORDERS_DIR = path.join(DATA_DIR, "orders");
+const DRAFTS_DIR = path.join(DATA_DIR, "draft-orders");
 const STOCK_FILE = path.join(DATA_DIR, "stock-items.json");
 const SEED_STOCK_FILE = path.join(ROOT, "stock-items.json");
 const REMOVED_DUPLICATE_STOCK_IDS = new Set([
@@ -56,6 +57,7 @@ const REMOVED_DUPLICATE_STOCK_IDS = new Set([
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(ORDERS_DIR, { recursive: true });
+fs.mkdirSync(DRAFTS_DIR, { recursive: true });
 seedDataFiles();
 pruneRemovedDuplicateStockItems();
 reconcileStockCatalogue();
@@ -370,6 +372,18 @@ const server = http.createServer(async (request, response) => {
       return sendJson(response, 200, { orders: readOrders() });
     }
 
+    if (request.method === "GET" && url.pathname === "/api/drafts") {
+      return sendJson(response, 200, { drafts: readDrafts() });
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/drafts") {
+      return sendJson(response, 200, saveDraft(await readJson(request)));
+    }
+
+    if (request.method === "DELETE" && url.pathname.startsWith("/api/drafts/")) {
+      return sendJson(response, 200, deleteDraft(decodeURIComponent(url.pathname.replace("/api/drafts/", ""))));
+    }
+
     if (request.method === "DELETE" && url.pathname.startsWith("/api/orders/")) {
       return sendJson(response, 200, deleteOrder(decodeURIComponent(url.pathname.replace("/api/orders/", ""))));
     }
@@ -447,6 +461,66 @@ function readOrders() {
       };
     })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function readDrafts() {
+  return fs.readdirSync(DRAFTS_DIR)
+    .filter((fileName) => fileName.endsWith(".json"))
+    .map((fileName) => JSON.parse(fs.readFileSync(path.join(DRAFTS_DIR, fileName), "utf8")))
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+}
+
+function saveDraft(payload) {
+  const lineItems = Array.isArray(payload.lineItems) ? payload.lineItems : [];
+
+  if (!lineItems.length) {
+    const error = new Error("Add at least one stock item before saving.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const existingDraft = payload.id ? findDraft(cleanText(payload.id)) : null;
+  const existingDrafts = readDrafts();
+  const now = new Date().toISOString();
+  const draft = {
+    id: existingDraft?.id || randomUUID(),
+    draftNumber: existingDraft?.draftNumber || `DRAFT-${String(existingDrafts.length + 1).padStart(4, "0")}`,
+    neededBy: cleanText(payload.neededBy),
+    note: cleanText(payload.note),
+    createdAt: existingDraft?.createdAt || now,
+    updatedAt: now,
+    lineItems: lineItems.map((line) => ({
+      id: cleanText(line.id),
+      name: cleanText(line.name),
+      sku: cleanText(line.sku),
+      supplier: cleanText(line.supplier),
+      category: cleanText(line.category),
+      quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
+      unitCost: Number(line.unitCost || 0)
+    }))
+  };
+
+  fs.writeFileSync(path.join(DRAFTS_DIR, `${draft.id}.json`), JSON.stringify(draft, null, 2));
+  return { draft };
+}
+
+function findDraft(draftId) {
+  const filePath = path.join(DRAFTS_DIR, `${draftId}.json`);
+  if (!fs.existsSync(filePath)) return null;
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function deleteDraft(draftId) {
+  const filePath = path.join(DRAFTS_DIR, `${draftId}.json`);
+
+  if (!fs.existsSync(filePath)) {
+    const error = new Error("Draft order not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  fs.unlinkSync(filePath);
+  return { deleted: true, draftId };
 }
 
 function writeOrder(order) {

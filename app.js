@@ -1,10 +1,12 @@
 const state = {
   catalog: [],
   orders: [],
+  drafts: [],
   cart: new Map(),
   categories: [],
   activeCategory: null,
   selectedOrderId: null,
+  currentDraftId: null,
   search: ""
 };
 
@@ -20,7 +22,9 @@ const els = {
   clearCart: document.querySelector("#clearCart"),
   refreshOrders: document.querySelector("#refreshOrders"),
   orderHistory: document.querySelector("#orderHistory"),
+  draftHistory: document.querySelector("#draftHistory"),
   orderPreview: document.querySelector("#orderPreview"),
+  saveDraft: document.querySelector("#saveDraft"),
   submitOrder: document.querySelector("#submitOrder"),
   submitMessage: document.querySelector("#submitMessage"),
   neededBy: document.querySelector("#neededBy"),
@@ -45,7 +49,7 @@ init();
 async function init() {
   setDefaultDate();
   bindEvents();
-  await Promise.all([loadCatalog(), loadOrders()]);
+  await Promise.all([loadCatalog(), loadOrders(), loadDrafts()]);
   render();
 }
 
@@ -57,12 +61,15 @@ function bindEvents() {
 
   els.clearCart.addEventListener("click", () => {
     state.cart.clear();
+    state.currentDraftId = null;
     renderCart();
     renderCatalog();
+    renderDrafts();
     setMessage("", "");
   });
 
-  els.refreshOrders.addEventListener("click", loadOrders);
+  els.refreshOrders.addEventListener("click", refreshSavedWork);
+  els.saveDraft.addEventListener("click", saveCurrentDraft);
   els.submitOrder.addEventListener("click", submitOrder);
   els.settingsButton.addEventListener("click", openSettings);
   els.closeSettings.addEventListener("click", closeSettings);
@@ -110,6 +117,27 @@ async function loadOrders() {
   renderOrders();
 }
 
+async function loadDrafts() {
+  try {
+    const response = await fetch("/api/drafts");
+    if (!response.ok) throw new Error("Saved drafts unavailable");
+
+    const data = await response.json();
+    state.drafts = data.drafts || [];
+    if (state.currentDraftId && !state.drafts.some((draft) => draft.id === state.currentDraftId)) {
+      state.currentDraftId = null;
+    }
+  } catch {
+    state.drafts = [];
+  }
+
+  renderDrafts();
+}
+
+async function refreshSavedWork() {
+  await Promise.all([loadOrders(), loadDrafts()]);
+}
+
 function setDefaultDate() {
   const date = new Date();
   date.setDate(date.getDate() + 1);
@@ -126,6 +154,7 @@ function render() {
   renderTabs();
   renderCatalog();
   renderCart();
+  renderDrafts();
   renderOrders();
 }
 
@@ -381,6 +410,40 @@ function renderCart() {
   });
 }
 
+function renderDrafts() {
+  if (!els.draftHistory) return;
+
+  if (!state.drafts.length) {
+    els.draftHistory.innerHTML = `
+      <div class="mini-empty">
+        <strong>No saved drafts</strong>
+        <span>Save a basket to finish it later.</span>
+      </div>
+    `;
+    return;
+  }
+
+  els.draftHistory.innerHTML = state.drafts.map((draft) => `
+    <div class="order-file draft-file" aria-selected="${draft.id === state.currentDraftId}">
+      <div>
+        <span>${escapeHtml(draft.draftNumber)}</span>
+        <small>${escapeHtml(formatDate(draft.updatedAt || draft.createdAt))} · ${draft.lineItems.length} ${draft.lineItems.length === 1 ? "line" : "lines"}</small>
+      </div>
+      <div class="preview-actions">
+        <button class="order-action" type="button" data-action="open-draft" data-draft-id="${escapeHtml(draft.id)}">Open</button>
+        <button class="order-action is-danger" type="button" data-action="delete-draft" data-draft-id="${escapeHtml(draft.id)}">Delete</button>
+      </div>
+    </div>
+  `).join("");
+
+  els.draftHistory.querySelectorAll("button[data-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (button.dataset.action === "open-draft") openDraft(button.dataset.draftId);
+      if (button.dataset.action === "delete-draft") deleteDraft(button.dataset.draftId);
+    });
+  });
+}
+
 function renderOrders() {
   if (!els.orderHistory) return;
 
@@ -556,6 +619,86 @@ async function deleteStockItem(itemId) {
   renderCatalog();
   renderCart();
   setMessage(`${item.name} deleted from stock.`, "success");
+}
+
+async function saveCurrentDraft() {
+  const lines = Array.from(state.cart.values());
+
+  if (!lines.length) {
+    setMessage("Add at least one stock item before saving.", "error");
+    return;
+  }
+
+  els.saveDraft.disabled = true;
+  setMessage("Saving this order for later...", "");
+
+  try {
+    const response = await fetch("/api/drafts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: state.currentDraftId,
+        neededBy: els.neededBy.value,
+        note: els.orderNote.value.trim(),
+        lineItems: lines.map((line) => ({
+          id: line.id,
+          name: line.name,
+          sku: line.sku,
+          supplier: line.supplier,
+          category: line.category,
+          quantity: line.quantity,
+          unitCost: line.unitCost
+        }))
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Draft could not be saved.");
+
+    state.currentDraftId = data.draft.id;
+    await loadDrafts();
+    setMessage(`${data.draft.draftNumber} saved. You can open it later on another device.`, "success");
+  } catch (error) {
+    setMessage(error.message, "error");
+  } finally {
+    els.saveDraft.disabled = false;
+  }
+}
+
+function openDraft(draftId) {
+  const draft = state.drafts.find((entry) => entry.id === draftId);
+  if (!draft) return;
+
+  state.currentDraftId = draft.id;
+  state.cart = new Map(draft.lineItems.map((line) => [line.id, { ...line }]));
+  els.neededBy.value = draft.neededBy || els.neededBy.value;
+  els.orderNote.value = draft.note || "";
+  renderCart();
+  renderCatalog();
+  renderDrafts();
+  setMessage(`${draft.draftNumber} opened. Add more items, then save again.`, "success");
+}
+
+async function deleteDraft(draftId) {
+  const draft = state.drafts.find((entry) => entry.id === draftId);
+  if (!draft) return;
+
+  const confirmed = window.confirm(`Delete ${draft.draftNumber}? This removes the saved draft only.`);
+  if (!confirmed) return;
+
+  const response = await fetch(`/api/drafts/${encodeURIComponent(draftId)}`, {
+    method: "DELETE"
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    setMessage(data.message || "Could not delete draft.", "error");
+    return;
+  }
+
+  if (state.currentDraftId === draftId) state.currentDraftId = null;
+  await loadDrafts();
+  setMessage(`${draft.draftNumber} deleted.`, "success");
 }
 
 async function submitOrder() {
