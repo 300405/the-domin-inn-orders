@@ -463,8 +463,8 @@ function renderOrders() {
   if (!state.orders.length) {
     els.orderHistory.innerHTML = `
       <div class="mini-empty">
-        <strong>No saved orders yet</strong>
-        <span>Submitted orders will appear here.</span>
+        <strong>No previous orders yet</strong>
+        <span>Submitted stock orders will appear here.</span>
       </div>
     `;
     els.orderPreview.innerHTML = "";
