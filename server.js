@@ -11,6 +11,7 @@ const ORDERS_DIR = path.join(DATA_DIR, "orders");
 const DRAFTS_DIR = path.join(DATA_DIR, "draft-orders");
 const STOCK_FILE = path.join(DATA_DIR, "stock-items.json");
 const SEED_STOCK_FILE = path.join(ROOT, "stock-items.json");
+const MINIMUM_STOCK_ITEMS = 20;
 const REMOVED_DUPLICATE_STOCK_IDS = new Set([
   "square-smirnoff-vodka",
   "square-gordons-pink-gin",
@@ -162,15 +163,27 @@ function stock(id, name, category, supplier, packSize, unitCost, reorderQuantity
 }
 
 function readStockItems() {
-  if (!fs.existsSync(STOCK_FILE)) {
-    const seedItems = fs.existsSync(SEED_STOCK_FILE)
-      ? JSON.parse(fs.readFileSync(SEED_STOCK_FILE, "utf8"))
-      : defaultStockItems;
+  let items = null;
+
+  if (fs.existsSync(STOCK_FILE)) {
+    try {
+      items = JSON.parse(fs.readFileSync(STOCK_FILE, "utf8"));
+    } catch {
+      items = null;
+    }
+  }
+
+  if (Array.isArray(items) && items.length >= MINIMUM_STOCK_ITEMS) {
+    return items;
+  }
+
+  const seedItems = readSeedStockItems();
+  if (seedItems.length) {
     writeStockItems(seedItems);
     return seedItems;
   }
 
-  return JSON.parse(fs.readFileSync(STOCK_FILE, "utf8"));
+  return Array.isArray(items) ? items : [];
 }
 
 function writeStockItems(items) {
@@ -262,7 +275,7 @@ function slugify(value) {
 }
 
 function seedDataFiles() {
-  if (!fs.existsSync(STOCK_FILE) && fs.existsSync(SEED_STOCK_FILE) && STOCK_FILE !== SEED_STOCK_FILE) {
+  if (stockFileNeedsSeed() && fs.existsSync(SEED_STOCK_FILE) && STOCK_FILE !== SEED_STOCK_FILE) {
     fs.copyFileSync(SEED_STOCK_FILE, STOCK_FILE);
   }
 
@@ -274,10 +287,32 @@ function seedDataFiles() {
   }
 }
 
+function stockFileNeedsSeed() {
+  if (!fs.existsSync(STOCK_FILE)) return true;
+
+  try {
+    const items = JSON.parse(fs.readFileSync(STOCK_FILE, "utf8"));
+    return !Array.isArray(items) || items.length < MINIMUM_STOCK_ITEMS;
+  } catch {
+    return true;
+  }
+}
+
+function readSeedStockItems() {
+  if (!fs.existsSync(SEED_STOCK_FILE) || STOCK_FILE === SEED_STOCK_FILE) return [];
+
+  try {
+    const items = JSON.parse(fs.readFileSync(SEED_STOCK_FILE, "utf8"));
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
+
 function pruneRemovedDuplicateStockItems() {
   if (!fs.existsSync(STOCK_FILE)) return;
 
-  const items = JSON.parse(fs.readFileSync(STOCK_FILE, "utf8"));
+  const items = readStockItems();
   const nextItems = items.filter((item) => !REMOVED_DUPLICATE_STOCK_IDS.has(item.id));
   if (nextItems.length !== items.length) writeStockItems(nextItems);
 }
