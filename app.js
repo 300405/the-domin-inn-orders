@@ -24,6 +24,7 @@ const els = {
   orderHistory: document.querySelector("#orderHistory"),
   draftHistory: document.querySelector("#draftHistory"),
   orderPreview: document.querySelector("#orderPreview"),
+  ordersMenuButton: document.querySelector("#ordersMenuButton"),
   saveDraft: document.querySelector("#saveDraft"),
   submitOrder: document.querySelector("#submitOrder"),
   submitMessage: document.querySelector("#submitMessage"),
@@ -69,6 +70,7 @@ function bindEvents() {
   });
 
   els.refreshOrders.addEventListener("click", refreshSavedWork);
+  els.ordersMenuButton.addEventListener("click", showPreviousOrders);
   els.saveDraft.addEventListener("click", saveCurrentDraft);
   els.submitOrder.addEventListener("click", submitOrder);
   els.settingsButton.addEventListener("click", openSettings);
@@ -136,6 +138,17 @@ async function loadDrafts() {
 
 async function refreshSavedWork() {
   await Promise.all([loadOrders(), loadDrafts()]);
+}
+
+async function showPreviousOrders() {
+  await refreshSavedWork();
+
+  const ordersFolder = document.querySelector(".orders-folder");
+  if (!ordersFolder) return;
+
+  ordersFolder.scrollIntoView({ behavior: "smooth", block: "start" });
+  ordersFolder.classList.add("is-highlighted");
+  window.setTimeout(() => ordersFolder.classList.remove("is-highlighted"), 1400);
 }
 
 function setDefaultDate() {

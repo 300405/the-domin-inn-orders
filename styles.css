@@ -383,6 +383,40 @@ textarea {
   flex: 1;
 }
 
+.orders-menu-button {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 4px;
+  place-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.orders-menu-button span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+.orders-menu-button:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.orders-menu-button:hover span {
+  background: #fff;
+}
+
+.orders-folder.is-highlighted {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16), var(--shadow);
+}
+
 .category-tabs {
   display: flex;
   gap: 8px;
@@ -830,6 +864,14 @@ textarea {
   .toolbar {
     grid-template-columns: 1fr;
     width: 100%;
+  }
+
+  .orders-menu-button {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top));
+    right: 12px;
+    z-index: 15;
+    box-shadow: 0 10px 26px rgba(25, 39, 35, 0.16);
   }
 
   .settings-grid {
