@@ -244,9 +244,11 @@ function renderCatalog() {
 function filteredItems() {
   return state.catalog
     .filter((item) => {
-      const categoryMatch = !state.activeCategory || item.category === state.activeCategory;
       const haystack = [item.name, item.category].join(" ").toLowerCase();
       const searchMatch = !state.search || haystack.includes(state.search);
+      if (state.search) return searchMatch;
+
+      const categoryMatch = !state.activeCategory || item.category === state.activeCategory;
       return categoryMatch && searchMatch;
     })
     .sort((a, b) => a.name.localeCompare(b.name));
