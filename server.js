@@ -53,8 +53,37 @@ const REMOVED_DUPLICATE_STOCK_IDS = new Set([
   "square-prawn-cocktail",
   "snack-walkers-salt-vinegar",
   "snack-walkers-prawn-cocktail",
-  "square-milky-bar"
+  "square-milky-bar",
+  "sky-sourz-apple-70",
+  "sky-sourz-cherry-70",
+  "square-famous-grouse",
+  "square-kraken-rum",
+  "square-bear-star-pinot-grigio"
 ]);
+
+const SQUARE_CATALOGUE_PATCHES = [
+  { id: "baby-bulmers-500", name: "Bulmers 500ml", category: "Bottles", unitCost: 1.29 },
+  { id: "baby-bulmers-red-berry", name: "Bulmers No17 Crushed Red Berry/Lime 500ml", category: "Bottles", unitCost: 1.19 },
+  { id: "square-kopparberg-mango", name: "Kopparberg  Mango", category: "Bottles", unitCost: 1.53 },
+  { id: "baby-kopparberg-mixed", name: "Kopparberg Mixed Fruit 500ml", category: "Bottles", unitCost: 1.53 },
+  { id: "baby-kopparberg-strawberry", name: "Kopparberg Strawberry & Lime 500ml", category: "Bottles", unitCost: 1.53 },
+  { id: "snack-bacon-fries", name: "Bacon Fries", category: "Snacks", unitCost: 0.46 },
+  { id: "square-grab-bag-chicken-walkers", name: "Grab Bag Chicken Walkers", category: "Snacks", unitCost: 0.63 },
+  { id: "snack-pork-scratchings", name: "Pork Scratchings", category: "Snacks", unitCost: 0.96 },
+  { id: "square-birra-moretti-0-0", name: "Birra Moretti 0.0", category: "Soft Drinks", unitCost: 0.97 },
+  { id: "britvic-slimline-tonic", name: "Britvic Slimline Tonic", category: "Soft Drinks", unitCost: 0.66 },
+  { id: "square-ciders", name: "Ciders", category: "Soft Drinks", unitCost: 1.86 },
+  { id: "square-coca-cola-bottle", name: "Coca cola bottle", category: "Soft Drinks", unitCost: 0 },
+  { id: "square-coffee", name: "Coffee", category: "Soft Drinks", unitCost: 1.2 },
+  { id: "square-hardy-s-0-chardonnay", name: "Hardy's 0% Chardonnay", category: "Soft Drinks", unitCost: 4.17 },
+  { id: "square-irn-bru-bottle", name: "Irn Bru Bottle", category: "Soft Drinks", unitCost: 0 },
+  { id: "square-orange-carton", name: "orange Carton", category: "Soft Drinks", unitCost: 0 },
+  { id: "square-pineapple-carton", name: "Pineapple carton", category: "Soft Drinks", unitCost: 0 },
+  { id: "square-tea", name: "Tea", category: "Soft Drinks", unitCost: 1.2 },
+  { id: "square-beefeater-blood-orange-gin", name: "Beefeater Blood Orange Gin", category: "Spirits", unitCost: 12.69 },
+  { id: "square-tia-maria", name: "Tia Maria", category: "Spirits", unitCost: 1 },
+  { id: "square-bear-star-chardonay", name: "FlowerHead Chardonnay", category: "Wine", unitCost: 1.8 }
+];
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(ORDERS_DIR, { recursive: true });
@@ -359,6 +388,27 @@ function reconcileStockCatalogue() {
   if (!items.some((item) => item.id === "kopparberg-strawberry-lime-0-0")) {
     items.push(stock("kopparberg-strawberry-lime-0-0", "Kopparberg Strawberry & Lime 0.0", "Bottles", "", "Regular", 0, 1));
     changed = true;
+  }
+
+  for (const patch of SQUARE_CATALOGUE_PATCHES) {
+    const item = items.find((entry) => entry.id === patch.id || entry.name === patch.name);
+    if (item) {
+      if (item.name !== patch.name) {
+        item.name = patch.name;
+        changed = true;
+      }
+      if (item.category !== patch.category) {
+        item.category = patch.category;
+        changed = true;
+      }
+      if (Number(item.unitCost || 0) !== patch.unitCost) {
+        item.unitCost = patch.unitCost;
+        changed = true;
+      }
+    } else {
+      items.push(stock(patch.id, patch.name, patch.category, "", "Regular", patch.unitCost, 1));
+      changed = true;
+    }
   }
 
   if (changed) writeStockItems(items);
