@@ -31,6 +31,12 @@ const els = {
   neededBy: document.querySelector("#neededBy"),
   orderNote: document.querySelector("#orderNote"),
   emptyCartTemplate: document.querySelector("#emptyCartTemplate"),
+  pricesButton: document.querySelector("#pricesButton"),
+  pricesOverlay: document.querySelector("#pricesOverlay"),
+  closePrices: document.querySelector("#closePrices"),
+  printPrices: document.querySelector("#printPrices"),
+  pricesSummary: document.querySelector("#pricesSummary"),
+  pricesTableBody: document.querySelector("#pricesTableBody"),
   settingsButton: document.querySelector("#settingsButton"),
   settingsOverlay: document.querySelector("#settingsOverlay"),
   closeSettings: document.querySelector("#closeSettings"),
@@ -38,9 +44,11 @@ const els = {
   editItemForm: document.querySelector("#editItemForm"),
   settingsAddName: document.querySelector("#settingsAddName"),
   settingsAddCategory: document.querySelector("#settingsAddCategory"),
+  settingsAddPrice: document.querySelector("#settingsAddPrice"),
   settingsEditItem: document.querySelector("#settingsEditItem"),
   settingsEditName: document.querySelector("#settingsEditName"),
   settingsEditCategory: document.querySelector("#settingsEditCategory"),
+  settingsEditPrice: document.querySelector("#settingsEditPrice"),
   settingsDeleteItem: document.querySelector("#settingsDeleteItem"),
   settingsMessage: document.querySelector("#settingsMessage")
 };
@@ -73,6 +81,12 @@ function bindEvents() {
   els.ordersMenuButton.addEventListener("click", showPreviousOrders);
   els.saveDraft.addEventListener("click", saveCurrentDraft);
   els.submitOrder.addEventListener("click", submitOrder);
+  els.pricesButton.addEventListener("click", openPrices);
+  els.closePrices.addEventListener("click", closePrices);
+  els.printPrices.addEventListener("click", () => window.print());
+  els.pricesOverlay.addEventListener("click", (event) => {
+    if (event.target === els.pricesOverlay) closePrices();
+  });
   els.settingsButton.addEventListener("click", openSettings);
   els.closeSettings.addEventListener("click", closeSettings);
   els.settingsOverlay.addEventListener("click", (event) => {
@@ -265,6 +279,66 @@ function closeSettings() {
   els.settingsOverlay.hidden = true;
 }
 
+function openPrices() {
+  renderPrices();
+  els.pricesOverlay.hidden = false;
+}
+
+function closePrices() {
+  els.pricesOverlay.hidden = true;
+}
+
+function renderPrices() {
+  const items = [...state.catalog].sort((a, b) => {
+    const categorySort = (a.category || "").localeCompare(b.category || "");
+    return categorySort || a.name.localeCompare(b.name);
+  });
+  const pricedItems = items.filter((item) => Number(item.unitCost || 0) > 0).length;
+  const categoryTotals = new Map();
+  let usualOrderValue = 0;
+
+  for (const item of items) {
+    const orderQuantity = Math.max(1, Number(item.reorderQuantity || 1));
+    const lineValue = Number(item.unitCost || 0) * orderQuantity;
+    usualOrderValue += lineValue;
+    categoryTotals.set(item.category || "Other", (categoryTotals.get(item.category || "Other") || 0) + lineValue);
+  }
+
+  els.pricesSummary.innerHTML = `
+    <div>
+      <span>Items</span>
+      <strong>${items.length}</strong>
+    </div>
+    <div>
+      <span>Priced items</span>
+      <strong>${pricedItems}</strong>
+    </div>
+    <div>
+      <span>Usual order value</span>
+      <strong>${formatMoney(usualOrderValue)}</strong>
+    </div>
+    <div>
+      <span>Categories</span>
+      <strong>${categoryTotals.size}</strong>
+    </div>
+  `;
+
+  els.pricesTableBody.innerHTML = items.map((item) => {
+    const orderQuantity = Math.max(1, Number(item.reorderQuantity || 1));
+    const unitCost = Number(item.unitCost || 0);
+
+    return `
+      <tr>
+        <td>${escapeHtml(item.name)}</td>
+        <td>${escapeHtml(item.category || "Other")}</td>
+        <td>${formatMoney(unitCost)}</td>
+        <td>${orderQuantity}</td>
+        <td>${formatMoney(unitCost * orderQuantity)}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
 function renderSettings() {
   const categories = state.categories.length
     ? state.categories.map((category) => category.name)
@@ -278,6 +352,7 @@ function renderSettings() {
   els.settingsAddCategory.innerHTML = categoryOptions;
   els.settingsEditCategory.innerHTML = categoryOptions;
   els.settingsEditItem.innerHTML = itemOptions;
+  if (!els.settingsAddPrice.value) els.settingsAddPrice.value = "";
   fillSettingsItem();
 }
 
@@ -285,6 +360,7 @@ function fillSettingsItem() {
   const item = state.catalog.find((entry) => entry.id === els.settingsEditItem.value);
   els.settingsEditName.value = item?.name || "";
   els.settingsEditCategory.value = item?.category || state.categories[0]?.name || "Bottles";
+  els.settingsEditPrice.value = item ? Number(item.unitCost || 0).toFixed(2) : "";
   els.settingsDeleteItem.disabled = !item;
 }
 
@@ -302,13 +378,15 @@ async function addSettingsItem(event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
-        category: els.settingsAddCategory.value
+        category: els.settingsAddCategory.value,
+        unitCost: parseMoneyInput(els.settingsAddPrice.value)
       })
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Could not add item.");
 
     els.settingsAddName.value = "";
+    els.settingsAddPrice.value = "";
     await loadCatalog();
     render();
     renderSettings();
@@ -333,7 +411,8 @@ async function saveSettingsItem(event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
-        category: els.settingsEditCategory.value
+        category: els.settingsEditCategory.value,
+        unitCost: parseMoneyInput(els.settingsEditPrice.value)
       })
     });
     const data = await response.json();
@@ -767,6 +846,18 @@ function formatDate(value) {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date(value));
+}
+
+function formatMoney(value) {
+  return new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP"
+  }).format(Number(value || 0));
+}
+
+function parseMoneyInput(value) {
+  const parsed = Number(String(value || "").replace(/[£,]/g, ""));
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }
 
 function setMessage(message, type) {

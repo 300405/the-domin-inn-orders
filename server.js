@@ -219,7 +219,7 @@ function createStockItem(payload) {
     reorderPoint: 1,
     reorderQuantity: 1,
     parLevel: 2,
-    unitCost: 0
+    unitCost: parseMoney(payload.unitCost)
   };
 
   items.push(item);
@@ -247,8 +247,16 @@ function updateStockItem(itemId, payload) {
 
   item.name = name;
   if (category) item.category = category;
+  if (Object.prototype.hasOwnProperty.call(payload, "unitCost")) {
+    item.unitCost = parseMoney(payload.unitCost);
+  }
   writeStockItems(items);
   return { item };
+}
+
+function parseMoney(value) {
+  const parsed = Number(String(value ?? "").replace(/[£,]/g, ""));
+  return Number.isFinite(parsed) && parsed >= 0 ? Number(parsed.toFixed(2)) : 0;
 }
 
 function deleteStockItem(itemId) {

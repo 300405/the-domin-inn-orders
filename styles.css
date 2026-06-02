@@ -739,7 +739,8 @@ textarea {
   color: var(--accent);
 }
 
-.settings-overlay {
+.settings-overlay,
+.prices-overlay {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -749,11 +750,13 @@ textarea {
   padding: 18px;
 }
 
-.settings-overlay[hidden] {
+.settings-overlay[hidden],
+.prices-overlay[hidden] {
   display: none;
 }
 
-.settings-panel {
+.settings-panel,
+.prices-panel {
   width: min(760px, 100%);
   max-height: min(820px, 92vh);
   overflow: auto;
@@ -764,12 +767,23 @@ textarea {
   box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
 }
 
+.prices-panel {
+  width: min(980px, 100%);
+}
+
 .settings-head,
+.prices-head,
 .settings-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.prices-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .settings-grid {
@@ -810,6 +824,76 @@ textarea {
   color: var(--ink);
   font: inherit;
   font-weight: 750;
+}
+
+.prices-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.prices-summary div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  padding: 12px;
+}
+
+.prices-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.73rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.prices-summary strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 1.2rem;
+}
+
+.prices-table-wrap {
+  max-height: 58vh;
+  overflow: auto;
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.prices-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.prices-table th,
+.prices-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prices-table th {
+  position: sticky;
+  top: 0;
+  background: #f7faf8;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.prices-table td:first-child {
+  font-weight: 850;
+}
+
+.prices-table td:nth-child(3),
+.prices-table td:nth-child(4),
+.prices-table td:nth-child(5) {
+  white-space: nowrap;
 }
 
 .empty-state {
@@ -878,7 +962,51 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .prices-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .prices-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .line-controls {
     justify-content: flex-start;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .app-shell,
+  .settings-overlay {
+    display: none !important;
+  }
+
+  .prices-overlay {
+    position: static;
+    display: block !important;
+    background: #fff;
+    padding: 0;
+  }
+
+  .prices-panel {
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .prices-actions {
+    display: none;
+  }
+
+  .prices-table-wrap {
+    max-height: none;
+    overflow: visible;
   }
 }

@@ -69,6 +69,7 @@
         </div>
         <div class="toolbar">
           <input id="searchInput" type="search" placeholder="Search item">
+          <button class="ghost-button" id="pricesButton" type="button">£ Prices</button>
           <button class="ghost-button" id="settingsButton" type="button">Settings</button>
           <button class="orders-menu-button" id="ordersMenuButton" type="button" aria-label="Previous orders" title="Previous orders">
             <span></span>
@@ -131,6 +132,10 @@
             Category
             <select id="settingsAddCategory"></select>
           </label>
+          <label>
+            Price
+            <input id="settingsAddPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+          </label>
           <button class="submit-button" type="submit">Add item</button>
         </form>
 
@@ -148,6 +153,10 @@
             Category
             <select id="settingsEditCategory"></select>
           </label>
+          <label>
+            Price
+            <input id="settingsEditPrice" type="number" min="0" step="0.01" inputmode="decimal">
+          </label>
           <div class="settings-actions">
             <button class="submit-button" type="submit">Save changes</button>
             <button class="order-action is-danger" id="settingsDeleteItem" type="button">Delete item</button>
@@ -156,6 +165,37 @@
       </div>
 
       <p class="submit-message" id="settingsMessage" role="status"></p>
+    </section>
+  </div>
+
+  <div class="prices-overlay" id="pricesOverlay" hidden>
+    <section class="prices-panel" role="dialog" aria-modal="true" aria-labelledby="pricesTitle">
+      <div class="prices-head">
+        <div>
+          <p class="eyeline">Stock value</p>
+          <h2 id="pricesTitle">GBP price list</h2>
+        </div>
+        <div class="prices-actions">
+          <button class="ghost-button" id="printPrices" type="button">Print</button>
+          <button class="ghost-button" id="closePrices" type="button">Close</button>
+        </div>
+      </div>
+
+      <div class="prices-summary" id="pricesSummary"></div>
+      <div class="prices-table-wrap">
+        <table class="prices-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Usual order</th>
+              <th>Order value</th>
+            </tr>
+          </thead>
+          <tbody id="pricesTableBody"></tbody>
+        </table>
+      </div>
     </section>
   </div>
 
