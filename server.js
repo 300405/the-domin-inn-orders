@@ -103,7 +103,13 @@ const SQUARE_CATALOGUE_PATCHES = [
   { id: "sky-bear-star-pinot", name: "FlowerHead Pinot Grigio - Single Serve Bottle", category: "Wine", unitCost: 1.91, packSize: "Single Serve Bottle" },
   { id: "square-bear-star-sauvignon-blanc", name: "FlowerHead Sauvignon Blanc - Single Serve Bottle", category: "Wine", unitCost: 1.81, packSize: "Single Serve Bottle" },
   { id: "square-bear-star-shiraz", name: "FlowerHead Shiraz - Single Serve Bottle", category: "Wine", unitCost: 1.81, packSize: "Single Serve Bottle" },
-  { id: "square-bear-star-zinfandel-rose", name: "FlowerHead Zinfandel Rose - Single Serve Bottle", category: "Wine", unitCost: 1.43, packSize: "Single Serve Bottle" }
+  { id: "square-bear-star-zinfandel-rose", name: "FlowerHead Zinfandel Rose - Single Serve Bottle", category: "Wine", unitCost: 1.43, packSize: "Single Serve Bottle" },
+  { id: "square-hardy-s-vr-chardonnay", name: "FlowerHead Chardonnay - 75cl Bottle", category: "Wine", unitCost: 6.28, packSize: "75cl Bottle" },
+  { id: "square-hardy-s-vr-melot", name: "FlowerHead Merlot - 75cl Bottle", category: "Wine", unitCost: 6.36, packSize: "75cl Bottle" },
+  { id: "square-hardy-s-vr-pinot-grigio", name: "FlowerHead Pinot Grigio - 75cl Bottle", category: "Wine", unitCost: 6.29, packSize: "75cl Bottle" },
+  { id: "square-hardy-s-vr-rose", name: "FlowerHead Rose - 75cl Bottle", category: "Wine", unitCost: 6.14, packSize: "75cl Bottle" },
+  { id: "square-hardy-s-vr-sauvignon-blanc", name: "FlowerHead Sauvignon Blanc - 75cl Bottle", category: "Wine", unitCost: 6.19, packSize: "75cl Bottle" },
+  { id: "square-hardy-s-vr-shiraz", name: "FlowerHead Shiraz - 75cl Bottle", category: "Wine", unitCost: 6.28, packSize: "75cl Bottle" }
 ];
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
