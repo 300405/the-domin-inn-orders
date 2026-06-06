@@ -19,6 +19,8 @@ const els = {
   cartLines: document.querySelector("#cartLines"),
   lineCount: document.querySelector("#lineCount"),
   unitCount: document.querySelector("#unitCount"),
+  cartNetTotal: document.querySelector("#cartNetTotal"),
+  cartGrossTotal: document.querySelector("#cartGrossTotal"),
   clearCart: document.querySelector("#clearCart"),
   openCart: document.querySelector("#openCart"),
   closeCart: document.querySelector("#closeCart"),
@@ -519,12 +521,22 @@ function addToCart(itemId, quantity) {
 function renderCart() {
   const lines = Array.from(state.cart.values());
   const units = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const totals = lines.reduce((summary, line) => {
+    const net = Number(line.unitCost || 0) * Number(line.quantity || 0);
+    const vatRate = line.id === "snack-pork-scratchings" ? 0 : 0.2;
+    summary.net += net;
+    summary.vat += net * vatRate;
+    return summary;
+  }, { net: 0, vat: 0 });
+  const gross = totals.net + totals.vat;
 
   els.lineCount.textContent = lines.length;
   els.unitCount.textContent = units;
+  els.cartNetTotal.textContent = formatMoney(totals.net);
+  els.cartGrossTotal.textContent = formatMoney(gross);
   els.mobileBasketCount.textContent = units;
   els.mobileBasketSummary.textContent = lines.length
-    ? `${lines.length} ${lines.length === 1 ? "item" : "items"} · ${units} ${units === 1 ? "unit" : "units"}`
+    ? `${lines.length} ${lines.length === 1 ? "item" : "items"} · ${formatMoney(gross)} inc VAT`
     : "No items added";
   els.openCart.classList.toggle("has-items", Boolean(lines.length));
   els.submitOrder.disabled = !lines.length;
@@ -538,6 +550,8 @@ function renderCart() {
     <div class="cart-line">
       <div>
         <strong>${escapeHtml(line.name)}</strong>
+        <span>${escapeHtml(line.packSize && line.packSize !== "Regular" ? line.packSize : "Each")} · ${formatMoney(line.unitCost)} each</span>
+        <span>Expected line cost: ${formatMoney(Number(line.unitCost || 0) * line.quantity)} before VAT</span>
       </div>
       <div class="line-controls">
         <button class="quantity-button" type="button" data-action="decrement" data-item-id="${escapeHtml(line.id)}" aria-label="Remove one ${escapeHtml(line.name)}">-</button>
@@ -639,7 +653,7 @@ function renderOrderPreview() {
         <span>${escapeHtml(formatDate(order.createdAt))}</span>
       </div>
       <div class="preview-actions">
-        ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener">Open PDF</a>` : ""}
+        ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener">Open supplier PDF</a>` : ""}
         ${order.pdfPath ? `<button class="order-action whatsapp-action" type="button" data-action="share" data-order-id="${escapeHtml(order.id)}">Share to WhatsApp</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="email" data-order-id="${escapeHtml(order.id)}">Email</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="print" data-order-id="${escapeHtml(order.id)}">Print</button>` : ""}
@@ -832,6 +846,7 @@ async function saveCurrentDraft() {
           sku: line.sku,
           supplier: line.supplier,
           category: line.category,
+          packSize: line.packSize,
           quantity: line.quantity,
           unitCost: line.unitCost
         }))
@@ -910,6 +925,7 @@ async function submitOrder() {
           name: line.name,
           sku: line.sku,
           supplier: line.supplier,
+          packSize: line.packSize,
           quantity: line.quantity,
           unitCost: line.unitCost
         }))

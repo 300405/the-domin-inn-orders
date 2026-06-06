@@ -64,6 +64,10 @@ const REMOVED_DUPLICATE_STOCK_IDS = new Set([
   "square-baileys-irish-cream"
 ]);
 
+const ZERO_RATE_VAT_ITEM_IDS = new Set([
+  "snack-pork-scratchings"
+]);
+
 const SQUARE_CATALOGUE_PATCHES = [
   { id: "baby-bulmers-500", name: "Bulmers 500ml", category: "Bottles", unitCost: 1.29 },
   { id: "baby-bulmers-red-berry", name: "Bulmers No17 Crushed Red Berry/Lime 500ml", category: "Bottles", unitCost: 1.19 },
@@ -618,8 +622,10 @@ async function createOrder(payload) {
       name: cleanText(line.name),
       sku: cleanText(line.sku),
       supplier: cleanText(line.supplier),
+      packSize: cleanText(line.packSize),
       quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
-      unitCost: Number(line.unitCost || 0)
+      unitCost: Number(line.unitCost || 0),
+      vatRate: ZERO_RATE_VAT_ITEM_IDS.has(cleanText(line.id)) ? 0 : 0.2
     }))
   };
 
@@ -683,8 +689,10 @@ function saveDraft(payload) {
       sku: cleanText(line.sku),
       supplier: cleanText(line.supplier),
       category: cleanText(line.category),
+      packSize: cleanText(line.packSize),
       quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
-      unitCost: Number(line.unitCost || 0)
+      unitCost: Number(line.unitCost || 0),
+      vatRate: ZERO_RATE_VAT_ITEM_IDS.has(cleanText(line.id)) ? 0 : 0.2
     }))
   };
 
@@ -900,22 +908,52 @@ function findSavedOrder(orderId) {
 
 function buildOrderPdf(order) {
   const lineHeight = 16;
-  const linesPerPage = 34;
+  const linesPerPage = 36;
+  const stockById = new Map(readStockItems().map((item) => [item.id, item]));
+  const pricedLines = order.lineItems.map((line) => {
+    const stockItem = stockById.get(line.id);
+    return {
+      ...line,
+      packSize: line.packSize || stockItem?.packSize || "Each",
+      unitCost: Number(line.unitCost || stockItem?.unitCost || 0),
+      vatRate: Number(line.vatRate ?? (ZERO_RATE_VAT_ITEM_IDS.has(line.id) ? 0 : 0.2))
+    };
+  });
+  const totals = pricedLines.reduce((summary, line) => {
+    const net = line.unitCost * Number(line.quantity || 0);
+    summary.net += net;
+    summary.vat += net * line.vatRate;
+    return summary;
+  }, { net: 0, vat: 0 });
   const detailRows = [
     ...wrapPdfLine(`Order: ${order.orderNumber}`),
     ...wrapPdfLine(`Date: ${formatDate(order.createdAt)}`),
     ...(order.neededBy ? wrapPdfLine(`Needed by: ${order.neededBy}`) : []),
     ...(order.note ? wrapPdfLine(`Notes: ${order.note}`) : []),
     { text: "", size: 9 },
-    { text: "Items", size: 11 },
-    ...order.lineItems.flatMap((line) => wrapPdfLine(`${line.quantity} x ${line.name}`))
+    { text: "Items to supply", size: 11 },
+    ...pricedLines.flatMap((line) => {
+      const quantity = Number(line.quantity || 0);
+      const rows = [
+        ...wrapPdfLine(`${quantity} x ${line.name}`),
+        ...wrapPdfLine(`Pack: ${line.packSize} | Expected price: ${formatPdfMoney(line.unitCost)} each | Line: ${formatPdfMoney(line.unitCost * quantity)}`)
+      ];
+      if (line.vatRate === 0) rows.push(...wrapPdfLine("VAT: zero-rated"));
+      return [...rows, { text: "", size: 6 }];
+    }),
+    { text: "Expected order value", size: 11 },
+    ...wrapPdfLine(`Subtotal before VAT: ${formatPdfMoney(totals.net)}`),
+    ...wrapPdfLine(`VAT: ${formatPdfMoney(totals.vat)}`),
+    ...wrapPdfLine(`Estimated total including VAT: ${formatPdfMoney(totals.net + totals.vat)}`),
+    { text: "", size: 8 },
+    ...wrapPdfLine("Prices are estimates from the latest supplier invoices and can be checked against the final invoice.")
   ];
 
   const pages = [];
   for (let index = 0; index < detailRows.length; index += linesPerPage) {
     const pageNumber = pages.length + 1;
     pages.push([
-      { text: pageNumber === 1 ? "Stock Order" : "Stock Order - continued", size: 12 },
+      { text: pageNumber === 1 ? "The Domin Inn - Supplier Stock Order" : "Supplier Stock Order - continued", size: 12 },
       ...(pageNumber > 1 ? [{ text: `Order: ${order.orderNumber}`, size: 9 }] : []),
       { text: "", size: 9 },
       ...detailRows.slice(index, index + linesPerPage)
@@ -993,6 +1031,10 @@ function formatDate(value) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function formatPdfMoney(value) {
+  return `GBP ${Number(value || 0).toFixed(2)}`;
 }
 
 function serveStatic(pathname, response) {
