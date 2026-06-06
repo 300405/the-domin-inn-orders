@@ -835,24 +835,27 @@ function findSavedOrder(orderId) {
 }
 
 function buildOrderPdf(order) {
-  const lineHeight = 18;
-  const linesPerPage = 38;
-  const rows = [
-    "Stock Order",
-    `Order: ${order.orderNumber}`,
-    `Date: ${formatDate(order.createdAt)}`,
-    order.neededBy ? `Needed by: ${order.neededBy}` : "",
-    order.note ? `Notes: ${order.note}` : "",
-    "",
-    "Items",
-    ...order.lineItems.flatMap((line) => [
-      `${line.quantity} x ${line.name}`
-    ]),
-  ].filter((line) => line !== "");
+  const lineHeight = 16;
+  const linesPerPage = 34;
+  const detailRows = [
+    ...wrapPdfLine(`Order: ${order.orderNumber}`),
+    ...wrapPdfLine(`Date: ${formatDate(order.createdAt)}`),
+    ...(order.neededBy ? wrapPdfLine(`Needed by: ${order.neededBy}`) : []),
+    ...(order.note ? wrapPdfLine(`Notes: ${order.note}`) : []),
+    { text: "", size: 9 },
+    { text: "Items", size: 11 },
+    ...order.lineItems.flatMap((line) => wrapPdfLine(`${line.quantity} x ${line.name}`))
+  ];
 
   const pages = [];
-  for (let index = 0; index < rows.length; index += linesPerPage) {
-    pages.push(rows.slice(index, index + linesPerPage));
+  for (let index = 0; index < detailRows.length; index += linesPerPage) {
+    const pageNumber = pages.length + 1;
+    pages.push([
+      { text: pageNumber === 1 ? "Stock Order" : "Stock Order - continued", size: 12 },
+      ...(pageNumber > 1 ? [{ text: `Order: ${order.orderNumber}`, size: 9 }] : []),
+      { text: "", size: 9 },
+      ...detailRows.slice(index, index + linesPerPage)
+    ]);
   }
 
   const fontObjectNumber = 3 + pages.length * 2;
@@ -862,9 +865,9 @@ function buildOrderPdf(order) {
   pages.forEach((pageRows) => {
     const pageObjectNumber = objects.length + 1;
     const contentObjectNumber = objects.length + 2;
-    const textCommands = pageRows.map((line, index) => {
-      const y = 770 - index * lineHeight;
-      return `BT /F1 11 Tf 50 ${y} Td (${escapePdfText(line)}) Tj ET`;
+    const textCommands = pageRows.map((row, index) => {
+      const y = 785 - index * lineHeight;
+      return `BT /F1 ${row.size || 9.5} Tf 50 ${y} Td (${escapePdfText(row.text)}) Tj ET`;
     }).join("\n");
 
     pageRefs.push(`${pageObjectNumber} 0 R`);
@@ -890,6 +893,28 @@ function buildOrderPdf(order) {
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
 
   return Buffer.from(pdf);
+}
+
+function wrapPdfLine(value, maxCharacters = 78) {
+  const text = String(value || "").trim();
+  if (!text) return [{ text: "", size: 9 }];
+
+  const words = text.split(/\s+/);
+  const lines = [];
+  let current = "";
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length <= maxCharacters) {
+      current = next;
+    } else {
+      if (current) lines.push(current);
+      current = word;
+    }
+  }
+
+  if (current) lines.push(current);
+  return lines.map((line) => ({ text: line, size: 9.5 }));
 }
 
 function escapePdfText(value) {
