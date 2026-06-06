@@ -109,7 +109,71 @@ const SQUARE_CATALOGUE_PATCHES = [
   { id: "square-hardy-s-vr-pinot-grigio", name: "FlowerHead Pinot Grigio - 75cl Bottle", category: "Wine", unitCost: 6.29, packSize: "75cl Bottle" },
   { id: "square-hardy-s-vr-rose", name: "FlowerHead Rose - 75cl Bottle", category: "Wine", unitCost: 6.14, packSize: "75cl Bottle" },
   { id: "square-hardy-s-vr-sauvignon-blanc", name: "FlowerHead Sauvignon Blanc - 75cl Bottle", category: "Wine", unitCost: 6.19, packSize: "75cl Bottle" },
-  { id: "square-hardy-s-vr-shiraz", name: "FlowerHead Shiraz - 75cl Bottle", category: "Wine", unitCost: 6.28, packSize: "75cl Bottle" }
+  { id: "square-hardy-s-vr-shiraz", name: "FlowerHead Shiraz - 75cl Bottle", category: "Wine", unitCost: 6.28, packSize: "75cl Bottle" },
+
+  // LD163 supplier invoice costs. Newer invoice prices take priority.
+  { id: "baby-carlsberg-11gl", unitCost: 88.95, packSize: "11 gallon keg" },
+  { id: "baby-coors-11gl", unitCost: 128.42, packSize: "11 gallon keg" },
+  { id: "sky-guinness-11gl", unitCost: 162, packSize: "11 gallon keg" },
+  { id: "baby-madri-11gl", unitCost: 152.39, packSize: "11 gallon keg" },
+  { id: "sky-strongbow-11gl", unitCost: 104.5, packSize: "11 gallon keg" },
+  { id: "sky-strongbow-dark-fruit-11gl", unitCost: 118.4, packSize: "11 gallon keg" },
+  { id: "baby-carling-22gl", unitCost: 234.99, packSize: "22 gallon keg" },
+  { id: "baby-captain-morgan-spiced-15", unitCost: 26.89, packSize: "1.5L Bottle" },
+  { id: "baby-coke-can", unitCost: 10.99, packSize: "2 dozen" },
+  { id: "baby-coke-zero-can", unitCost: 9.99, packSize: "2 dozen" },
+  { id: "square-corona", unitCost: 17.62, packSize: "18 bottles" },
+  { id: "square-diet-coke", unitCost: 9.99, packSize: "2 dozen" },
+  { id: "baby-bib-lemonade", unitCost: 33.99, packSize: "10L bag-in-box" },
+  { id: "square-fanta-lemon", unitCost: 9.64, packSize: "2 dozen" },
+  { id: "square-fanta-orange", unitCost: 9.64, packSize: "2 dozen" },
+  { id: "square-bear-star-chardonay", unitCost: 43.19, packSize: "2 dozen single serve bottles" },
+  { id: "baby-gordons-pink-15", unitCost: 28.35, packSize: "1.5L Bottle" },
+  { id: "square-irn-bru", unitCost: 11.17, packSize: "2 dozen" },
+  { id: "baby-jack-daniels-15", unitCost: 36.65, packSize: "1.5L Bottle" },
+  { id: "baby-kopparberg-mixed", unitCost: 24.99, packSize: "15 bottles" },
+  { id: "baby-kopparberg-af", unitCost: 11.31, packSize: "8 bottles" },
+  { id: "baby-kopparberg-strawberry", unitCost: 24.99, packSize: "15 bottles" },
+  { id: "snack-kp-dry-roasted", unitCost: 13.2, packSize: "24 x 50g" },
+  { id: "square-orange-carton", unitCost: 19.99, packSize: "12 x 1L" },
+  { id: "baby-malibu-15", unitCost: 24.99, packSize: "1.5L Bottle" },
+  { id: "square-pepsi-max", unitCost: 10.3, packSize: "2 dozen" },
+  { id: "square-r-whites-lemonade", unitCost: 10.18, packSize: "2 dozen" },
+  { id: "snack-pork-scratchings", unitCost: 11.49, packSize: "12 x 70g" },
+  { id: "square-schweppes-orange", unitCost: 14.49, packSize: "2 dozen" },
+  { id: "baby-smirnoff-red-15", unitCost: 26.15, packSize: "1.5L Bottle" },
+  { id: "square-tequila-rose", unitCost: 16.39, packSize: "1L Bottle" },
+  { id: "square-vk-blue", unitCost: 21.71, packSize: "2 dozen" },
+  { id: "square-cheese-onion", unitCost: 16.99, packSize: "32 bags" },
+  { id: "baby-white-rock-water-500", unitCost: 4.34, packSize: "2 dozen" },
+  { id: "baby-bacardi-15", unitCost: 31.12, packSize: "1.5L Bottle" },
+  { id: "britvic-slimline-tonic", unitCost: 15.9, packSize: "2 dozen" },
+  { id: "baby-bulmers-500", unitCost: 14.49, packSize: "1 dozen" },
+  { id: "baby-bulmers-red-berry", unitCost: 17.99, packSize: "1 dozen" },
+  { id: "square-desperados", unitCost: 30, packSize: "2 dozen" },
+  { id: "baby-bib-pepsi", unitCost: 69.93, packSize: "10L bag-in-box" },
+  { id: "baby-jameson-15", unitCost: 37.89, packSize: "1.5L Bottle" },
+  { id: "square-kit-kat", unitCost: 13.99, packSize: "24 bars" },
+  { id: "snack-kp-salted-nuts", unitCost: 13.2, packSize: "24 x 50g" },
+  { id: "baby-magners-568", unitCost: 16.99, packSize: "1 dozen" },
+  { id: "square-newcastle-brown-ale", unitCost: 21.43, packSize: "1 dozen 550ml bottles" },
+  { id: "baby-pringles-bbq", unitCost: 8.99, packSize: "12 x 40g" },
+  { id: "square-original-pringles", unitCost: 8.99, packSize: "12 x 40g" },
+  { id: "square-salt-vinegar-pringles", unitCost: 8.99, packSize: "12 x 40g" },
+  { id: "square-scampi-fries", unitCost: 10.99, packSize: "Card" },
+  { id: "square-southern-comfort", unitCost: 36.66, packSize: "1.5L Bottle" },
+  { id: "square-wkd-blue", unitCost: 21.86, packSize: "2 dozen" },
+  { id: "square-budwiser", unitCost: 20.99, packSize: "2 dozen 330ml bottles" },
+  { id: "square-captain-morgan-tiki", unitCost: 15.2, packSize: "70cl Bottle" },
+  { id: "square-courvoisier-vs-cognac-brandy", unitCost: 25.77, packSize: "70cl Bottle" },
+  { id: "square-doombar", unitCost: 13.58, packSize: "8 x 500ml" },
+  { id: "baby-bib-pepsi-zero", unitCost: 52, packSize: "10L bag-in-box" },
+  { id: "square-bear-star-sauvignon-blanc", unitCost: 43.19, packSize: "2 dozen single serve bottles" },
+  { id: "square-red-bull", unitCost: 21.24, packSize: "2 dozen 250ml cans" },
+  { id: "square-smirnoff-ice", unitCost: 25.99, packSize: "2 dozen 275ml bottles" },
+  { id: "square-snickers", unitCost: 12.99, packSize: "24 bars" },
+  { id: "square-stella", unitCost: 18.99, packSize: "18 bottles" },
+  { id: "square-ready-salted", unitCost: 16.99, packSize: "32 bags" }
 ];
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -420,11 +484,11 @@ function reconcileStockCatalogue() {
   for (const patch of SQUARE_CATALOGUE_PATCHES) {
     const item = items.find((entry) => entry.id === patch.id || entry.name === patch.name);
     if (item) {
-      if (item.name !== patch.name) {
+      if (patch.name && item.name !== patch.name) {
         item.name = patch.name;
         changed = true;
       }
-      if (item.category !== patch.category) {
+      if (patch.category && item.category !== patch.category) {
         item.category = patch.category;
         changed = true;
       }
@@ -436,7 +500,7 @@ function reconcileStockCatalogue() {
         item.packSize = patch.packSize;
         changed = true;
       }
-    } else {
+    } else if (patch.name && patch.category) {
       items.push(stock(patch.id, patch.name, patch.category, "", patch.packSize || "Regular", patch.unitCost, 1));
       changed = true;
     }

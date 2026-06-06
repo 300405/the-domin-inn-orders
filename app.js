@@ -25,6 +25,7 @@ const els = {
   draftHistory: document.querySelector("#draftHistory"),
   orderPreview: document.querySelector("#orderPreview"),
   ordersMenuButton: document.querySelector("#ordersMenuButton"),
+  closeOrdersFolder: document.querySelector("#closeOrdersFolder"),
   saveDraft: document.querySelector("#saveDraft"),
   submitOrder: document.querySelector("#submitOrder"),
   submitMessage: document.querySelector("#submitMessage"),
@@ -79,6 +80,7 @@ function bindEvents() {
 
   els.refreshOrders.addEventListener("click", refreshSavedWork);
   els.ordersMenuButton.addEventListener("click", showPreviousOrders);
+  els.closeOrdersFolder.addEventListener("click", closePreviousOrders);
   els.saveDraft.addEventListener("click", saveCurrentDraft);
   els.submitOrder.addEventListener("click", submitOrder);
   els.pricesButton.addEventListener("click", openPrices);
@@ -160,9 +162,25 @@ async function showPreviousOrders() {
   const ordersFolder = document.querySelector(".orders-folder");
   if (!ordersFolder) return;
 
+  if (window.matchMedia("(max-width: 800px)").matches) {
+    ordersFolder.classList.add("is-open");
+    document.body.classList.add("orders-view-open");
+    els.closeOrdersFolder.focus();
+    return;
+  }
+
   ordersFolder.scrollIntoView({ behavior: "smooth", block: "start" });
   ordersFolder.classList.add("is-highlighted");
   window.setTimeout(() => ordersFolder.classList.remove("is-highlighted"), 1400);
+}
+
+function closePreviousOrders() {
+  const ordersFolder = document.querySelector(".orders-folder");
+  if (!ordersFolder) return;
+
+  ordersFolder.classList.remove("is-open");
+  document.body.classList.remove("orders-view-open");
+  els.ordersMenuButton.focus();
 }
 
 function setDefaultDate() {
@@ -331,6 +349,7 @@ function renderPrices() {
       <tr>
         <td>${escapeHtml(item.name)}</td>
         <td>${escapeHtml(item.category || "Other")}</td>
+        <td>${escapeHtml(item.packSize || "Each")}</td>
         <td>${formatMoney(unitCost)}</td>
         <td>${orderQuantity}</td>
         <td>${formatMoney(unitCost * orderQuantity)}</td>
@@ -587,7 +606,8 @@ function renderOrderPreview() {
         <span>${escapeHtml(formatDate(order.createdAt))}</span>
       </div>
       <div class="preview-actions">
-        ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener" download="${escapeHtml(getOrderPdfName(order))}">${escapeHtml(getOrderPdfName(order))}</a>` : ""}
+        ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener">Open PDF</a>` : ""}
+        ${order.pdfPath ? `<button class="order-action" type="button" data-action="share" data-order-id="${escapeHtml(order.id)}">Share / WhatsApp</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="email" data-order-id="${escapeHtml(order.id)}">Email</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="print" data-order-id="${escapeHtml(order.id)}">Print</button>` : ""}
         <button class="order-action is-danger" type="button" data-action="delete" data-order-id="${escapeHtml(order.id)}">Delete</button>
@@ -604,6 +624,7 @@ function renderOrderPreview() {
 
   els.orderPreview.querySelectorAll("button[data-action]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (button.dataset.action === "share") shareOrder(button.dataset.orderId);
       if (button.dataset.action === "email") emailOrder(button.dataset.orderId);
       if (button.dataset.action === "print") printOrder(button.dataset.orderId);
       if (button.dataset.action === "delete") deleteSavedOrder(button.dataset.orderId);
@@ -615,6 +636,44 @@ function getOrderPdfName(order) {
   if (order.pdfFileName) return order.pdfFileName;
   const datePart = order.createdAt ? order.createdAt.slice(0, 10) : "order";
   return `${order.orderNumber}-${datePart}.pdf`;
+}
+
+async function shareOrder(orderId) {
+  const order = state.orders.find((entry) => entry.id === orderId);
+  if (!order?.pdfPath) return;
+
+  const pdfUrl = new URL(order.pdfPath, window.location.origin).href;
+  const fileName = getOrderPdfName(order);
+
+  try {
+    const response = await fetch(pdfUrl);
+    if (!response.ok) throw new Error("PDF could not be opened.");
+
+    const blob = await response.blob();
+    const file = new File([blob], fileName, { type: "application/pdf" });
+
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        title: `Stock order ${order.orderNumber}`,
+        text: `Save ${order.orderNumber} to the Domino Inn Orders folder in OneDrive.`,
+        files: [file]
+      });
+      return;
+    }
+
+    if (navigator.share) {
+      await navigator.share({
+        title: `Stock order ${order.orderNumber}`,
+        text: `Stock order ${order.orderNumber}`,
+        url: pdfUrl
+      });
+      return;
+    }
+
+    window.open(pdfUrl, "_blank", "noopener");
+  } catch (error) {
+    if (error.name !== "AbortError") setMessage(error.message || "PDF could not be shared.", "error");
+  }
 }
 
 async function emailOrder(orderId) {

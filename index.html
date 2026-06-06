@@ -47,7 +47,10 @@
             <p class="eyeline">Orders folder</p>
             <h2>Previous orders</h2>
           </div>
-          <button class="ghost-button" id="refreshOrders" type="button">Refresh</button>
+          <div class="folder-actions">
+            <button class="ghost-button" id="refreshOrders" type="button">Refresh</button>
+            <button class="folder-close-button" id="closeOrdersFolder" type="button" aria-label="Close previous orders" title="Close">×</button>
+          </div>
         </div>
         <div class="draft-section">
           <div class="draft-head">
@@ -188,6 +191,7 @@
             <tr>
               <th>Item</th>
               <th>Category</th>
+              <th>Pack</th>
               <th>Price</th>
               <th>Usual order</th>
               <th>Order value</th>

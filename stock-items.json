@@ -44,12 +44,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen 330ml bottles",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.87
+    "unitCost": 20.99
   },
   {
     "id": "baby-bulmers-500",
@@ -62,7 +62,7 @@
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.29
+    "unitCost": 14.49
   },
   {
     "id": "baby-bulmers-red-berry",
@@ -75,7 +75,7 @@
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.19
+    "unitCost": 17.99
   },
   {
     "id": "square-corona",
@@ -83,12 +83,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Corona",
+    "packSize": "18 bottles",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.96
+    "unitCost": 17.62
   },
   {
     "id": "square-corona-0-0",
@@ -109,12 +109,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.32
+    "unitCost": 30
   },
   {
     "id": "square-doombar",
@@ -122,12 +122,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "8 x 500ml",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.6
+    "unitCost": 13.58
   },
   {
     "id": "square-guinness-0-0",
@@ -265,12 +265,12 @@
     "sku": "BABY-KOPPARBERG-MIXED",
     "category": "Bottles",
     "supplier": "Baby Bottles",
-    "packSize": "15 bottles per case",
+    "packSize": "15 bottles",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.53
+    "unitCost": 24.99
   },
   {
     "id": "baby-kopparberg-af",
@@ -278,7 +278,7 @@
     "sku": "BABY-KOPPARBERG-AF",
     "category": "Bottles",
     "supplier": "Baby Bottles",
-    "packSize": "8 bottles per case",
+    "packSize": "8 bottles",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 2,
@@ -304,12 +304,12 @@
     "sku": "BABY-KOPPARBERG-STRAWBER",
     "category": "Bottles",
     "supplier": "Baby Bottles",
-    "packSize": "15 bottles per case",
+    "packSize": "15 bottles",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.53
+    "unitCost": 24.99
   },
   {
     "id": "square-madri-0-0",
@@ -356,12 +356,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "1 dozen 550ml bottles",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.77
+    "unitCost": 21.43
   },
   {
     "id": "square-old-mout",
@@ -447,12 +447,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen 275ml bottles",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.05
+    "unitCost": 25.99
   },
   {
     "id": "square-stella",
@@ -460,12 +460,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "18 bottles",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.05
+    "unitCost": 18.99
   },
   {
     "id": "square-vk-black-cherry",
@@ -486,12 +486,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.87
+    "unitCost": 21.71
   },
   {
     "id": "square-vk-ice",
@@ -512,12 +512,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.96
+    "unitCost": 21.86
   },
   {
     "id": "square-wkd-cherry",
@@ -538,7 +538,7 @@
     "sku": "BABY-CARLSBERG-11GL",
     "category": "Kegs",
     "supplier": "Baby Bottles",
-    "packSize": "Each",
+    "packSize": "11 gallon keg",
     "onHand": 0,
     "reorderPoint": 2,
     "reorderQuantity": 3,
@@ -551,7 +551,7 @@
     "sku": "BABY-COORS-11GL",
     "category": "Kegs",
     "supplier": "Baby Bottles",
-    "packSize": "Each",
+    "packSize": "11 gallon keg",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
@@ -564,12 +564,12 @@
     "sku": "SKY-GUINNESS-11GL",
     "category": "Kegs",
     "supplier": "Sky Wines",
-    "packSize": "Each",
+    "packSize": "11 gallon keg",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 2,
     "parLevel": 3,
-    "unitCost": 164.92
+    "unitCost": 162
   },
   {
     "id": "baby-madri-11gl",
@@ -577,7 +577,7 @@
     "sku": "BABY-MADRI-11GL",
     "category": "Kegs",
     "supplier": "Baby Bottles",
-    "packSize": "Each",
+    "packSize": "11 gallon keg",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
@@ -590,7 +590,7 @@
     "sku": "SKY-STRONGBOW-11GL",
     "category": "Kegs",
     "supplier": "Sky Wines",
-    "packSize": "Each",
+    "packSize": "11 gallon keg",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
@@ -603,12 +603,12 @@
     "sku": "SKY-STRONGBOW-DARK-FRUIT",
     "category": "Kegs",
     "supplier": "Sky Wines",
-    "packSize": "Each",
+    "packSize": "11 gallon keg",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 119.02
+    "unitCost": 118.4
   },
   {
     "id": "baby-carling-22gl",
@@ -616,7 +616,7 @@
     "sku": "BABY-CARLING-22GL",
     "category": "Kegs",
     "supplier": "Baby Bottles",
-    "packSize": "Each",
+    "packSize": "22 gallon keg",
     "onHand": 0,
     "reorderPoint": 3,
     "reorderQuantity": 5,
@@ -798,12 +798,12 @@
     "sku": "",
     "category": "Snacks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "24 bars",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.42
+    "unitCost": 13.99
   },
   {
     "id": "snack-kp-dry-roasted",
@@ -811,12 +811,12 @@
     "sku": "SNACK-KP-DRY-ROASTED",
     "category": "Snacks",
     "supplier": "Usual snack supplier",
-    "packSize": "Case",
+    "packSize": "24 x 50g",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0
+    "unitCost": 13.2
   },
   {
     "id": "snack-kp-salted-nuts",
@@ -824,12 +824,12 @@
     "sku": "SNACK-KP-SALTED-NUTS",
     "category": "Snacks",
     "supplier": "Usual snack supplier",
-    "packSize": "Case",
+    "packSize": "24 x 50g",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0
+    "unitCost": 13.2
   },
   {
     "id": "snack-mini-cheddars",
@@ -863,12 +863,12 @@
     "sku": "SNACK-PORK-SCRATCHINGS",
     "category": "Snacks",
     "supplier": "Usual snack supplier",
-    "packSize": "Case",
+    "packSize": "12 x 70g",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.96
+    "unitCost": 11.49
   },
   {
     "id": "baby-pringles-bbq",
@@ -876,7 +876,7 @@
     "sku": "BABY-PRINGLES-BBQ",
     "category": "Snacks",
     "supplier": "Baby Bottles",
-    "packSize": "Each",
+    "packSize": "12 x 40g",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
@@ -889,12 +889,12 @@
     "sku": "",
     "category": "Snacks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "12 x 40g",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.75
+    "unitCost": 8.99
   },
   {
     "id": "square-scampi-fries",
@@ -902,12 +902,12 @@
     "sku": "",
     "category": "Snacks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "Card",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.46
+    "unitCost": 10.99
   },
   {
     "id": "square-snickers",
@@ -915,12 +915,12 @@
     "sku": "",
     "category": "Snacks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "24 bars",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.5
+    "unitCost": 12.99
   },
   {
     "id": "square-sour-cream-pringles",
@@ -954,12 +954,12 @@
     "sku": "",
     "category": "Snacks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "32 bags",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.53
+    "unitCost": 16.99
   },
   {
     "id": "square-chicken",
@@ -980,12 +980,12 @@
     "sku": "",
     "category": "Snacks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "32 bags",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.53
+    "unitCost": 16.99
   },
   {
     "id": "square-7up-free",
@@ -1045,12 +1045,12 @@
     "sku": "BRITVIC-SLIMLINE-TONIC",
     "category": "Soft Drinks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.66
+    "unitCost": 15.9
   },
   {
     "id": "square-ciders",
@@ -1136,12 +1136,12 @@
     "sku": "",
     "category": "Soft Drinks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.42
+    "unitCost": 9.99
   },
   {
     "id": "baby-bib-energy",
@@ -1162,12 +1162,12 @@
     "sku": "BABY-BIB-LEMONADE",
     "category": "Soft Drinks",
     "supplier": "Baby Bottles",
-    "packSize": "Each",
+    "packSize": "10L bag-in-box",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 34.99
+    "unitCost": 33.99
   },
   {
     "id": "sky-bib-lime-cordial",
@@ -1188,7 +1188,7 @@
     "sku": "BABY-BIB-PEPSI",
     "category": "Soft Drinks",
     "supplier": "Baby Bottles",
-    "packSize": "Each",
+    "packSize": "10L bag-in-box",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
@@ -1201,7 +1201,7 @@
     "sku": "BABY-BIB-PEPSI-ZERO",
     "category": "Soft Drinks",
     "supplier": "Baby Bottles",
-    "packSize": "Each",
+    "packSize": "10L bag-in-box",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
@@ -1253,12 +1253,12 @@
     "sku": "",
     "category": "Soft Drinks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.4
+    "unitCost": 9.64
   },
   {
     "id": "square-fanta-orange",
@@ -1266,12 +1266,12 @@
     "sku": "",
     "category": "Soft Drinks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.41
+    "unitCost": 9.64
   },
   {
     "id": "square-hardy-s-0-chardonnay",
@@ -1292,12 +1292,12 @@
     "sku": "",
     "category": "Soft Drinks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.47
+    "unitCost": 11.17
   },
   {
     "id": "square-irn-bru-bottle",
@@ -1435,12 +1435,12 @@
     "sku": "",
     "category": "Soft Drinks",
     "supplier": "",
-    "packSize": "Case",
+    "packSize": "12 x 1L",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0
+    "unitCost": 19.99
   },
   {
     "id": "square-orange-cordial",
@@ -1474,12 +1474,12 @@
     "sku": "",
     "category": "Soft Drinks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.36
+    "unitCost": 10.3
   },
   {
     "id": "square-pineapple-carton",
@@ -1500,12 +1500,12 @@
     "sku": "",
     "category": "Soft Drinks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.36
+    "unitCost": 10.18
   },
   {
     "id": "square-red-bull",
@@ -1513,12 +1513,12 @@
     "sku": "",
     "category": "Soft Drinks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen 250ml cans",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.88
+    "unitCost": 21.24
   },
   {
     "id": "square-sauv-blanc",
@@ -1539,12 +1539,12 @@
     "sku": "",
     "category": "Soft Drinks",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "2 dozen",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.59
+    "unitCost": 14.49
   },
   {
     "id": "square-schweppes-pineapple",
@@ -1622,7 +1622,7 @@
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 3.99
+    "unitCost": 4.34
   },
   {
     "id": "square-antica-black-sambuca",
@@ -1765,7 +1765,7 @@
     "reorderPoint": 1,
     "reorderQuantity": 2,
     "parLevel": 3,
-    "unitCost": 31.24
+    "unitCost": 31.12
   },
   {
     "id": "square-bacardi-spiced-rum",
@@ -1921,7 +1921,7 @@
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 27.99
+    "unitCost": 26.89
   },
   {
     "id": "square-captain-morgan-spiced-gold-rum",
@@ -1942,12 +1942,12 @@
     "sku": "",
     "category": "Spirits",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "70cl Bottle",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.54
+    "unitCost": 15.2
   },
   {
     "id": "square-captain-morgans-dark-rum",
@@ -2033,12 +2033,12 @@
     "sku": "",
     "category": "Spirits",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "70cl Bottle",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 46.29
+    "unitCost": 25.77
   },
   {
     "id": "square-cragganmore",
@@ -2220,7 +2220,7 @@
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 29.32
+    "unitCost": 28.35
   },
   {
     "id": "square-gordons-sicilian-lemon-gin",
@@ -2311,7 +2311,7 @@
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 38.64
+    "unitCost": 36.65
   },
   {
     "id": "square-jagermeister",
@@ -2332,12 +2332,12 @@
     "sku": "BABY-JAMESON-15",
     "category": "Spirits",
     "supplier": "Baby Bottles",
-    "packSize": "Each",
+    "packSize": "1.5L Bottle",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 39.04
+    "unitCost": 37.89
   },
   {
     "id": "square-jamesons-irish-whiskey",
@@ -2540,12 +2540,12 @@
     "sku": "",
     "category": "Spirits",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "12 x 40g",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.75
+    "unitCost": 8.99
   },
   {
     "id": "square-parma-violet-gin",
@@ -2662,7 +2662,7 @@
     "reorderPoint": 2,
     "reorderQuantity": 4,
     "parLevel": 6,
-    "unitCost": 26.48
+    "unitCost": 26.15
   },
   {
     "id": "square-sourz-apple",
@@ -2714,7 +2714,7 @@
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 27.55
+    "unitCost": 36.66
   },
   {
     "id": "square-spicy-tamarind",
@@ -2800,12 +2800,12 @@
     "sku": "",
     "category": "Spirits",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "1L Bottle",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.55
+    "unitCost": 16.39
   },
   {
     "id": "square-the-glenlivet-founder-s-reserve",
@@ -2930,12 +2930,12 @@
     "sku": "",
     "category": "Wine",
     "supplier": "",
-    "packSize": "Single Serve Bottle",
+    "packSize": "2 dozen single serve bottles",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.8
+    "unitCost": 43.19
   },
   {
     "id": "square-bear-star-merlot",
@@ -2969,12 +2969,12 @@
     "sku": "",
     "category": "Wine",
     "supplier": "",
-    "packSize": "Single Serve Bottle",
+    "packSize": "2 dozen single serve bottles",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 1.81
+    "unitCost": 43.19
   },
   {
     "id": "square-bear-star-shiraz",
