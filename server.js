@@ -58,7 +58,10 @@ const REMOVED_DUPLICATE_STOCK_IDS = new Set([
   "sky-sourz-cherry-70",
   "square-famous-grouse",
   "square-kraken-rum",
-  "square-bear-star-pinot-grigio"
+  "square-bear-star-pinot-grigio",
+  "square-bacardi",
+  "square-malibu",
+  "square-baileys-irish-cream"
 ]);
 
 const SQUARE_CATALOGUE_PATCHES = [
@@ -77,12 +80,30 @@ const SQUARE_CATALOGUE_PATCHES = [
   { id: "square-coffee", name: "Coffee", category: "Soft Drinks", unitCost: 1.2 },
   { id: "square-hardy-s-0-chardonnay", name: "Hardy's 0% Chardonnay", category: "Soft Drinks", unitCost: 4.17 },
   { id: "square-irn-bru-bottle", name: "Irn Bru Bottle", category: "Soft Drinks", unitCost: 0 },
-  { id: "square-orange-carton", name: "orange Carton", category: "Soft Drinks", unitCost: 0 },
+  { id: "square-orange-carton", name: "Orange Carton - Case", category: "Soft Drinks", unitCost: 0, packSize: "Case" },
   { id: "square-pineapple-carton", name: "Pineapple carton", category: "Soft Drinks", unitCost: 0 },
   { id: "square-tea", name: "Tea", category: "Soft Drinks", unitCost: 1.2 },
   { id: "square-beefeater-blood-orange-gin", name: "Beefeater Blood Orange Gin", category: "Spirits", unitCost: 12.69 },
-  { id: "square-tia-maria", name: "Tia Maria", category: "Spirits", unitCost: 1 },
-  { id: "square-bear-star-chardonay", name: "FlowerHead Chardonnay", category: "Wine", unitCost: 1.8 }
+  { id: "baby-smirnoff-red-15", name: "Smirnoff Vodka - 1.5L Bottle", category: "Spirits", unitCost: 26.48, packSize: "1.5L Bottle" },
+  { id: "square-southern-comfort", name: "Southern Comfort - 1.5L Bottle", category: "Spirits", unitCost: 27.55, packSize: "1.5L Bottle" },
+  { id: "baby-bacardi-15", name: "Bacardi - 1.5L Bottle", category: "Spirits", unitCost: 31.24, packSize: "1.5L Bottle" },
+  { id: "square-bells-scotch-whisky", name: "Bells Whisky - 1.5L Bottle", category: "Spirits", unitCost: 23.5, packSize: "1.5L Bottle" },
+  { id: "baby-gordons-pink-15", name: "Gordons Pink Gin - 1.5L Bottle", category: "Spirits", unitCost: 29.32, packSize: "1.5L Bottle" },
+  { id: "baby-gordons-15", name: "Gordons Gin - 1.5L Bottle", category: "Spirits", unitCost: 28, packSize: "1.5L Bottle" },
+  { id: "square-house-vodka", name: "House Vodka - 1.5L Bottle", category: "Spirits", unitCost: 22.69, packSize: "1.5L Bottle" },
+  { id: "baby-malibu-15", name: "Malibu - 1.5L Bottle", category: "Spirits", unitCost: 24.99, packSize: "1.5L Bottle" },
+  { id: "baby-famous-grouse-15", name: "Famous Grouse - 1.5L Bottle", category: "Spirits", unitCost: 29.99, packSize: "1.5L Bottle" },
+  { id: "baby-captain-morgan-spiced-15", name: "Captain Morgan Spiced Rum - 1.5L Bottle", category: "Spirits", unitCost: 27.99, packSize: "1.5L Bottle" },
+  { id: "square-captain-morgans-dark-rum", name: "Captain Morgan Dark Rum - 1.5L Bottle", category: "Spirits", unitCost: 29.33, packSize: "1.5L Bottle" },
+  { id: "baby-jack-daniels-15", name: "Jack Daniels - 1.5L Bottle", category: "Spirits", unitCost: 38.64, packSize: "1.5L Bottle" },
+  { id: "square-tia-maria", name: "Tia Maria - 1.5L Bottle", category: "Spirits", unitCost: 1, packSize: "1.5L Bottle" },
+  { id: "baby-baileys-15", name: "Baileys - 1.5L Bottle", category: "Spirits", unitCost: 26.38, packSize: "1.5L Bottle" },
+  { id: "square-bear-star-chardonay", name: "FlowerHead Chardonnay - Single Serve Bottle", category: "Wine", unitCost: 1.8, packSize: "Single Serve Bottle" },
+  { id: "square-bear-star-merlot", name: "FlowerHead Merlot - Single Serve Bottle", category: "Wine", unitCost: 1.81, packSize: "Single Serve Bottle" },
+  { id: "sky-bear-star-pinot", name: "FlowerHead Pinot Grigio - Single Serve Bottle", category: "Wine", unitCost: 1.91, packSize: "Single Serve Bottle" },
+  { id: "square-bear-star-sauvignon-blanc", name: "FlowerHead Sauvignon Blanc - Single Serve Bottle", category: "Wine", unitCost: 1.81, packSize: "Single Serve Bottle" },
+  { id: "square-bear-star-shiraz", name: "FlowerHead Shiraz - Single Serve Bottle", category: "Wine", unitCost: 1.81, packSize: "Single Serve Bottle" },
+  { id: "square-bear-star-zinfandel-rose", name: "FlowerHead Zinfandel Rose - Single Serve Bottle", category: "Wine", unitCost: 1.43, packSize: "Single Serve Bottle" }
 ];
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -405,8 +426,12 @@ function reconcileStockCatalogue() {
         item.unitCost = patch.unitCost;
         changed = true;
       }
+      if (patch.packSize && item.packSize !== patch.packSize) {
+        item.packSize = patch.packSize;
+        changed = true;
+      }
     } else {
-      items.push(stock(patch.id, patch.name, patch.category, "", "Regular", patch.unitCost, 1));
+      items.push(stock(patch.id, patch.name, patch.category, "", patch.packSize || "Regular", patch.unitCost, 1));
       changed = true;
     }
   }
