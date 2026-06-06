@@ -532,6 +532,24 @@ textarea {
   line-height: 1.22;
 }
 
+.item-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--accent-dark);
+}
+
+.item-price strong {
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.item-price span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
 .item-card p {
   color: var(--muted);
   font-size: 0.9rem;

@@ -252,6 +252,10 @@ function renderCatalog() {
             </div>
           </div>
           <h3>${escapeHtml(item.name)}</h3>
+          <div class="item-price">
+            <strong>${Number(item.unitCost || 0) > 0 ? formatMoney(item.unitCost) : "Price not added"}</strong>
+            <span>${escapeHtml(item.packSize && item.packSize !== "Regular" ? item.packSize : "each")}</span>
+          </div>
         </header>
 
         <div class="order-row">
