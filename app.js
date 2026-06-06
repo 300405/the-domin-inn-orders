@@ -20,6 +20,10 @@ const els = {
   lineCount: document.querySelector("#lineCount"),
   unitCount: document.querySelector("#unitCount"),
   clearCart: document.querySelector("#clearCart"),
+  openCart: document.querySelector("#openCart"),
+  closeCart: document.querySelector("#closeCart"),
+  mobileBasketSummary: document.querySelector("#mobileBasketSummary"),
+  mobileBasketCount: document.querySelector("#mobileBasketCount"),
   refreshOrders: document.querySelector("#refreshOrders"),
   orderHistory: document.querySelector("#orderHistory"),
   draftHistory: document.querySelector("#draftHistory"),
@@ -77,6 +81,8 @@ function bindEvents() {
     renderDrafts();
     setMessage("", "");
   });
+  els.openCart.addEventListener("click", openCartPreview);
+  els.closeCart.addEventListener("click", closeCartPreview);
 
   els.refreshOrders.addEventListener("click", refreshSavedWork);
   els.ordersMenuButton.addEventListener("click", showPreviousOrders);
@@ -181,6 +187,24 @@ function closePreviousOrders() {
   ordersFolder.classList.remove("is-open");
   document.body.classList.remove("orders-view-open");
   els.ordersMenuButton.focus();
+}
+
+function openCartPreview() {
+  const cartPanel = document.querySelector(".cart-panel");
+  if (!cartPanel) return;
+
+  cartPanel.classList.add("is-open");
+  document.body.classList.add("cart-view-open");
+  els.closeCart.focus();
+}
+
+function closeCartPreview() {
+  const cartPanel = document.querySelector(".cart-panel");
+  if (!cartPanel) return;
+
+  cartPanel.classList.remove("is-open");
+  document.body.classList.remove("cart-view-open");
+  els.openCart.focus();
 }
 
 function setDefaultDate() {
@@ -498,6 +522,11 @@ function renderCart() {
 
   els.lineCount.textContent = lines.length;
   els.unitCount.textContent = units;
+  els.mobileBasketCount.textContent = units;
+  els.mobileBasketSummary.textContent = lines.length
+    ? `${lines.length} ${lines.length === 1 ? "item" : "items"} · ${units} ${units === 1 ? "unit" : "units"}`
+    : "No items added";
+  els.openCart.classList.toggle("has-items", Boolean(lines.length));
   els.submitOrder.disabled = !lines.length;
 
   if (!lines.length) {
@@ -611,7 +640,7 @@ function renderOrderPreview() {
       </div>
       <div class="preview-actions">
         ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener">Open PDF</a>` : ""}
-        ${order.pdfPath ? `<button class="order-action" type="button" data-action="share" data-order-id="${escapeHtml(order.id)}">Share / WhatsApp</button>` : ""}
+        ${order.pdfPath ? `<button class="order-action whatsapp-action" type="button" data-action="share" data-order-id="${escapeHtml(order.id)}">Share to WhatsApp</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="email" data-order-id="${escapeHtml(order.id)}">Email</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="print" data-order-id="${escapeHtml(order.id)}">Print</button>` : ""}
         <button class="order-action is-danger" type="button" data-action="delete" data-order-id="${escapeHtml(order.id)}">Delete</button>
@@ -894,7 +923,10 @@ async function submitOrder() {
     renderCart();
     renderCatalog();
     setMessage(`Submitted ${data.orderNumber} for ${data.lineCount} stock lines.`, "success");
+    state.selectedOrderId = data.orderId;
     await loadOrders();
+    closeCartPreview();
+    await showPreviousOrders();
   } catch (error) {
     setMessage(error.message, "error");
   } finally {

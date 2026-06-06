@@ -92,7 +92,10 @@
           <p class="eyeline">Purchase request</p>
           <h2>Order basket</h2>
         </div>
-        <button class="ghost-button" id="clearCart" type="button">Clear</button>
+        <div class="cart-head-actions">
+          <button class="ghost-button" id="clearCart" type="button">Clear</button>
+          <button class="cart-close-button" id="closeCart" type="button" aria-label="Close order basket" title="Back to stock">×</button>
+        </div>
       </div>
 
       <div class="cart-lines" id="cartLines"></div>
@@ -113,6 +116,14 @@
       <p class="submit-message" id="submitMessage" role="status"></p>
     </aside>
   </div>
+
+  <button class="mobile-basket-button" id="openCart" type="button" aria-label="Preview order basket">
+    <span>
+      <strong>View basket</strong>
+      <small id="mobileBasketSummary">No items added</small>
+    </span>
+    <span class="mobile-basket-count" id="mobileBasketCount">0</span>
+  </button>
 
   <div class="settings-overlay" id="settingsOverlay" hidden>
     <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
