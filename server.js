@@ -1009,8 +1009,6 @@ function restoreOrders(payload) {
 
 function buildOrderPdf(order, options = {}) {
   const includePrices = options.includePrices !== false;
-  const lineHeight = 16;
-  const linesPerPage = 36;
   const stockById = new Map(readStockItems().map((item) => [item.id, item]));
   const pricedLines = order.lineItems.map((line) => {
     const stockItem = stockById.get(line.id);
@@ -1021,6 +1019,11 @@ function buildOrderPdf(order, options = {}) {
       vatRate: Number(line.vatRate ?? (ZERO_RATE_VAT_ITEM_IDS.has(line.id) ? 0 : 0.2))
     };
   });
+
+  if (!includePrices) return buildSupplierOrderPdf(order, pricedLines);
+
+  const lineHeight = 16;
+  const linesPerPage = 36;
   const totals = pricedLines.reduce((summary, line) => {
     const net = line.unitCost * Number(line.quantity || 0);
     summary.net += net;
@@ -1071,25 +1074,81 @@ function buildOrderPdf(order, options = {}) {
     ]);
   }
 
-  const fontObjectNumber = 3 + pages.length * 2;
+  return renderPdfDocument(pages.map((pageRows) => pageRows.map((row, index) => {
+    const y = 785 - index * lineHeight;
+    return pdfText(50, y, row.text, row.size || 9.5);
+  }).join("\n")));
+}
+
+function buildSupplierOrderPdf(order, lineItems) {
+  const pageWidth = 595;
+  const left = 78;
+  const bottom = 55;
+  const pages = [];
+  let commands = [];
+  let y = 0;
+
+  const startPage = (continued = false) => {
+    commands = [];
+    y = 770;
+    const orderLabel = supplierOrderLabel(order.orderNumber);
+    const title = continued
+      ? `The Domin Inn - Supplier Stock Order (${orderLabel}) - continued`
+      : `The Domin Inn - Supplier Stock Order (${orderLabel})`;
+    commands.push(pdfText(pageWidth / 2, y, title, continued ? 14 : 17, "F2", "center"));
+    y -= 32;
+  };
+
+  const finishPage = () => {
+    pages.push(commands.join("\n"));
+  };
+
+  const addSupplierRow = (line) => {
+    const quantity = Number(line.quantity || 0);
+    const itemText = `${quantity} x ${line.name}`;
+    const itemLines = wrapPlainText(itemText, 62);
+    const rowHeight = Math.max(20, itemLines.length * 16);
+
+    if (y - rowHeight < bottom) {
+      finishPage();
+      startPage(true);
+    }
+
+    itemLines.forEach((row, index) => {
+      commands.push(pdfText(left, y - index * 16, row, 11));
+    });
+    y -= rowHeight;
+  };
+
+  startPage();
+  lineItems.forEach(addSupplierRow);
+  finishPage();
+
+  return renderPdfDocument(pages);
+}
+
+function supplierOrderLabel(orderNumber) {
+  const numericPart = String(orderNumber || "").match(/\d+/)?.[0];
+  return numericPart ? `Order ${Number(numericPart)}` : String(orderNumber || "Order");
+}
+
+function renderPdfDocument(pageStreams) {
+  const fontObjectNumber = 3 + pageStreams.length * 2;
+  const boldFontObjectNumber = fontObjectNumber + 1;
   const objects = ["<< /Type /Catalog /Pages 2 0 R >>", ""];
   const pageRefs = [];
 
-  pages.forEach((pageRows) => {
+  pageStreams.forEach((commands) => {
     const pageObjectNumber = objects.length + 1;
     const contentObjectNumber = objects.length + 2;
-    const textCommands = pageRows.map((row, index) => {
-      const y = 785 - index * lineHeight;
-      return `BT /F1 ${row.size || 9.5} Tf 50 ${y} Td (${escapePdfText(row.text)}) Tj ET`;
-    }).join("\n");
-
     pageRefs.push(`${pageObjectNumber} 0 R`);
-    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontObjectNumber} 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`);
-    objects.push(`<< /Length ${Buffer.byteLength(textCommands)} >>\nstream\n${textCommands}\nendstream`);
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontObjectNumber} 0 R /F2 ${boldFontObjectNumber} 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`);
+    objects.push(`<< /Length ${Buffer.byteLength(commands)} >>\nstream\n${commands}\nendstream`);
   });
 
-  objects[1] = `<< /Type /Pages /Kids [${pageRefs.join(" ")}] /Count ${pages.length} >>`;
+  objects[1] = `<< /Type /Pages /Kids [${pageRefs.join(" ")}] /Count ${pageStreams.length} >>`;
   objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
 
   let pdf = "%PDF-1.4\n";
   const offsets = [0];
@@ -1106,6 +1165,20 @@ function buildOrderPdf(order, options = {}) {
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
 
   return Buffer.from(pdf);
+}
+
+function pdfText(x, y, value, size = 10, font = "F1", align = "left") {
+  const text = String(value || "");
+  const adjustedX = align === "center" ? x - estimatePdfTextWidth(text, size) / 2 : x;
+  return `BT /${font} ${size} Tf ${adjustedX.toFixed(2)} ${y.toFixed(2)} Td (${escapePdfText(text)}) Tj ET`;
+}
+
+function wrapPlainText(value, maxCharacters) {
+  return wrapPdfLine(value, maxCharacters).map((line) => line.text);
+}
+
+function estimatePdfTextWidth(value, size) {
+  return String(value || "").length * size * 0.52;
 }
 
 function wrapPdfLine(value, maxCharacters = 78) {
