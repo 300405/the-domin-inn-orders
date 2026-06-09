@@ -674,10 +674,10 @@ function renderOrderPreview() {
         <span>${escapeHtml(formatDate(order.createdAt))}</span>
       </div>
       <div class="preview-actions">
-        ${order.pricedPdfPath ? `<a class="order-action" href="${escapeHtml(order.pricedPdfPath)}" target="_blank" rel="noopener">Our priced PDF</a>` : ""}
+        ${order.pricedPdfPath ? `<a class="order-action" href="${escapeHtml(order.pricedPdfPath)}" target="_blank" rel="noopener">Our PDF</a>` : ""}
         ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener">Supplier PDF</a>` : ""}
-        ${order.pdfPath ? `<button class="order-action whatsapp-action" type="button" data-action="whatsapp" data-order-id="${escapeHtml(order.id)}">Send on WhatsApp</button>` : ""}
-        ${order.pdfPath ? `<button class="order-action" type="button" data-action="share" data-order-id="${escapeHtml(order.id)}">Share / Save PDF</button>` : ""}
+        ${order.pdfPath ? `<button class="order-action whatsapp-action" type="button" data-action="whatsapp" data-order-id="${escapeHtml(order.id)}">WhatsApp</button>` : ""}
+        ${order.pdfPath ? `<button class="order-action" type="button" data-action="share" data-order-id="${escapeHtml(order.id)}">Save PDF</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="email" data-order-id="${escapeHtml(order.id)}">Email</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="print" data-order-id="${escapeHtml(order.id)}">Print</button>` : ""}
         <button class="order-action is-danger" type="button" data-action="delete" data-order-id="${escapeHtml(order.id)}">Delete</button>

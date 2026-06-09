@@ -177,6 +177,11 @@ label {
   gap: 10px;
 }
 
+.preview-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .folder-actions {
   display: flex;
   align-items: center;
@@ -282,8 +287,11 @@ label {
 .order-preview ul {
   display: grid;
   gap: 8px;
+  max-height: 320px;
   margin: 10px 0 0;
+  overflow-y: auto;
   padding: 0;
+  padding-right: 4px;
   list-style: none;
 }
 
@@ -305,14 +313,16 @@ label {
 }
 
 .preview-actions {
-  display: flex;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+  width: 100%;
 }
 
 .order-action {
+  display: grid;
+  min-height: 40px;
+  place-items: center;
   min-width: 0;
   border: 1px solid var(--accent);
   border-radius: 8px;
@@ -323,6 +333,7 @@ label {
   font-weight: 900;
   text-decoration: none;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .order-action:hover {
