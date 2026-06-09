@@ -61,7 +61,12 @@ const REMOVED_DUPLICATE_STOCK_IDS = new Set([
   "square-bear-star-pinot-grigio",
   "square-bacardi",
   "square-malibu",
-  "square-baileys-irish-cream"
+  "square-baileys-irish-cream",
+  "square-archers",
+  "square-captain-morgan-spiced-gold-rum",
+  "square-jamesons-irish-whiskey",
+  "square-jd-no7",
+  "square-martell"
 ]);
 
 const ZERO_RATE_VAT_ITEM_IDS = new Set([
@@ -100,8 +105,13 @@ const SQUARE_CATALOGUE_PATCHES = [
   { id: "baby-captain-morgan-spiced-15", name: "Captain Morgan Spiced Rum - 1.5L Bottle", category: "Spirits", unitCost: 27.99, packSize: "1.5L Bottle" },
   { id: "square-captain-morgans-dark-rum", name: "Captain Morgan Dark Rum - 1.5L Bottle", category: "Spirits", unitCost: 29.33, packSize: "1.5L Bottle" },
   { id: "baby-jack-daniels-15", name: "Jack Daniels - 1.5L Bottle", category: "Spirits", unitCost: 38.64, packSize: "1.5L Bottle" },
-  { id: "square-tia-maria", name: "Tia Maria - 1.5L Bottle", category: "Spirits", unitCost: 1, packSize: "1.5L Bottle" },
-  { id: "baby-baileys-15", name: "Baileys - 1.5L Bottle", category: "Spirits", unitCost: 26.38, packSize: "1.5L Bottle" },
+  { id: "square-tia-maria", name: "Tia Maria - 1.5L Bottle", category: "Spirits", unitCost: 0, packSize: "1.5L Bottle" },
+  { id: "baby-baileys-15", name: "Baileys - 1.5L Bottle", category: "Spirits", unitCost: 0, packSize: "1.5L Bottle" },
+  { id: "baby-archers-15", name: "Archers Peach - 1.5L Bottle", category: "Spirits", unitCost: 24.44, packSize: "1.5L Bottle" },
+  { id: "baby-jameson-15", name: "Jameson - 1.5L Bottle", category: "Spirits", unitCost: 37.89, packSize: "1.5L Bottle" },
+  { id: "baby-martell-15", name: "Martell - 1.5L Bottle", category: "Spirits", unitCost: 47.33, packSize: "1.5L Bottle" },
+  { id: "sky-jose-cuervo-silver-70", name: "Jose Cuervo Especial Silver - 70cl Bottle", category: "Spirits", unitCost: 15.09, packSize: "70cl Bottle" },
+  { id: "square-original-pringles", name: "Original Pringles", category: "Snacks", unitCost: 8.99, packSize: "12 x 40g" },
   { id: "square-bear-star-chardonay", name: "FlowerHead Chardonnay - Single Serve Bottle", category: "Wine", unitCost: 1.8, packSize: "Single Serve Bottle" },
   { id: "square-bear-star-merlot", name: "FlowerHead Merlot - Single Serve Bottle", category: "Wine", unitCost: 1.81, packSize: "Single Serve Bottle" },
   { id: "sky-bear-star-pinot", name: "FlowerHead Pinot Grigio - Single Serve Bottle", category: "Wine", unitCost: 1.91, packSize: "Single Serve Bottle" },
@@ -473,6 +483,22 @@ function reconcileStockCatalogue() {
       item.name = item.name.replaceAll("Bear & Star", "FlowerHead");
       changed = true;
     }
+
+    if (item.category === "Spirits") {
+      const packSize = String(item.packSize || "").trim().toLowerCase();
+      const isUnspecifiedBottle = !packSize || packSize === "regular" || packSize === "single" || packSize.includes("25ml");
+      const unitCost = Number(item.unitCost || 0);
+
+      if (isUnspecifiedBottle && item.packSize !== "Bottle size needed") {
+        item.packSize = "Bottle size needed";
+        changed = true;
+      }
+
+      if (isUnspecifiedBottle && unitCost > 0 && unitCost < 2) {
+        item.unitCost = 0;
+        changed = true;
+      }
+    }
   }
 
   if (!items.some((item) => item.id === "britvic-slimline-tonic")) {
@@ -535,6 +561,11 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === "GET" && url.pathname.startsWith("/supplier-order/") && url.pathname.endsWith(".pdf")) {
+      const orderId = decodeURIComponent(url.pathname.replace("/supplier-order/", "").replace(/\.pdf$/, ""));
+      return sendSavedOrderPdf(orderId, response, false);
+    }
+
     if (!isAuthorised(request)) {
       response.writeHead(401, {
         "WWW-Authenticate": 'Basic realm="The Domin Inn Orders"',
@@ -562,6 +593,20 @@ const server = http.createServer(async (request, response) => {
 
     if (request.method === "GET" && url.pathname === "/api/orders") {
       return sendJson(response, 200, { orders: readOrders() });
+    }
+
+    if (request.method === "GET" && url.pathname.startsWith("/api/orders/") && url.pathname.endsWith("/priced-pdf")) {
+      const orderId = decodeURIComponent(url.pathname.replace("/api/orders/", "").replace(/\/priced-pdf$/, ""));
+      return sendSavedOrderPdf(orderId, response, true);
+    }
+
+    if (request.method === "GET" && url.pathname.startsWith("/api/orders/") && url.pathname.endsWith("/pdf")) {
+      const orderId = decodeURIComponent(url.pathname.replace("/api/orders/", "").replace(/\/pdf$/, ""));
+      return sendSavedOrderPdf(orderId, response, false);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/orders/restore") {
+      return sendJson(response, 200, restoreOrders(await readJson(request)));
     }
 
     if (request.method === "GET" && url.pathname === "/api/drafts") {
@@ -647,10 +692,11 @@ function readOrders() {
       const filePath = path.join(ORDERS_DIR, fileName);
       const order = JSON.parse(fs.readFileSync(filePath, "utf8"));
       const baseName = fileName.replace(/\.json$/, "");
-      fs.writeFileSync(path.join(ORDERS_DIR, `${baseName}.pdf`), buildOrderPdf(order));
+      fs.writeFileSync(path.join(ORDERS_DIR, `${baseName}.pdf`), buildOrderPdf(order, { includePrices: false }));
       return {
         ...order,
-        pdfPath: `/orders/${baseName}.pdf`,
+        pdfPath: `/supplier-order/${encodeURIComponent(order.id)}.pdf`,
+        pricedPdfPath: `/api/orders/${encodeURIComponent(order.id)}/priced-pdf`,
         pdfFileName: `${baseName}.pdf`
       };
     })
@@ -725,7 +771,7 @@ function writeOrder(order) {
   const pdfPath = path.join(ORDERS_DIR, `${baseName}.pdf`);
 
   fs.writeFileSync(jsonPath, JSON.stringify(order, null, 2));
-  fs.writeFileSync(pdfPath, buildOrderPdf(order));
+  fs.writeFileSync(pdfPath, buildOrderPdf(order, { includePrices: false }));
 
   return { jsonPath, pdfPath };
 }
@@ -906,7 +952,63 @@ function findSavedOrder(orderId) {
   return null;
 }
 
-function buildOrderPdf(order) {
+function sendSavedOrderPdf(orderId, response, includePrices) {
+  const savedOrder = findSavedOrder(orderId);
+  if (!savedOrder) {
+    return sendJson(response, 404, { message: "Order report not found." });
+  }
+
+  const pdf = buildOrderPdf(savedOrder.order, { includePrices });
+  const fileName = includePrices
+    ? savedOrder.pdfFileName.replace(/\.pdf$/, "-priced.pdf")
+    : savedOrder.pdfFileName;
+  response.writeHead(200, {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `inline; filename="${fileName}"`,
+    "Content-Length": pdf.length,
+    "Cache-Control": "no-store"
+  });
+  response.end(pdf);
+}
+
+function restoreOrders(payload) {
+  const incomingOrders = Array.isArray(payload.orders) ? payload.orders : [];
+  const existingOrders = readOrders();
+  const existingIds = new Set(existingOrders.map((order) => order.id));
+
+  for (const candidate of incomingOrders.slice(0, 250)) {
+    const id = cleanText(candidate.id);
+    const orderNumber = cleanText(candidate.orderNumber);
+    const createdAt = cleanText(candidate.createdAt);
+    const lineItems = Array.isArray(candidate.lineItems) ? candidate.lineItems : [];
+    if (!id || !orderNumber || !createdAt || !lineItems.length || existingIds.has(id)) continue;
+
+    const restoredOrder = {
+      id,
+      orderNumber,
+      neededBy: cleanText(candidate.neededBy),
+      note: cleanText(candidate.note),
+      createdAt,
+      lineItems: lineItems.map((line) => ({
+        id: cleanText(line.id),
+        name: cleanText(line.name),
+        sku: cleanText(line.sku),
+        supplier: cleanText(line.supplier),
+        packSize: cleanText(line.packSize),
+        quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
+        unitCost: Number(line.unitCost || 0),
+        vatRate: Number(line.vatRate ?? (ZERO_RATE_VAT_ITEM_IDS.has(cleanText(line.id)) ? 0 : 0.2))
+      }))
+    };
+    writeOrder(restoredOrder);
+    existingIds.add(id);
+  }
+
+  return { orders: readOrders() };
+}
+
+function buildOrderPdf(order, options = {}) {
+  const includePrices = options.includePrices !== false;
   const lineHeight = 16;
   const linesPerPage = 36;
   const stockById = new Map(readStockItems().map((item) => [item.id, item]));
@@ -934,26 +1036,35 @@ function buildOrderPdf(order) {
     { text: "Items to supply", size: 11 },
     ...pricedLines.flatMap((line) => {
       const quantity = Number(line.quantity || 0);
-      const rows = [
-        ...wrapPdfLine(`${quantity} x ${line.name}`),
-        ...wrapPdfLine(`Pack: ${line.packSize} | Expected price: ${formatPdfMoney(line.unitCost)} each | Line: ${formatPdfMoney(line.unitCost * quantity)}`)
-      ];
-      if (line.vatRate === 0) rows.push(...wrapPdfLine("VAT: zero-rated"));
+      const rows = [...wrapPdfLine(`${quantity} x ${line.name}`)];
+      if (includePrices) {
+        rows.push(...wrapPdfLine(`Pack: ${line.packSize} | Expected price: ${formatPdfMoney(line.unitCost)} each | Line: ${formatPdfMoney(line.unitCost * quantity)}`));
+        if (line.vatRate === 0) rows.push(...wrapPdfLine("VAT: zero-rated"));
+      } else {
+        rows.push(...wrapPdfLine(`Pack: ${line.packSize}`));
+      }
       return [...rows, { text: "", size: 6 }];
     }),
-    { text: "Expected order value", size: 11 },
-    ...wrapPdfLine(`Subtotal before VAT: ${formatPdfMoney(totals.net)}`),
-    ...wrapPdfLine(`VAT: ${formatPdfMoney(totals.vat)}`),
-    ...wrapPdfLine(`Estimated total including VAT: ${formatPdfMoney(totals.net + totals.vat)}`),
-    { text: "", size: 8 },
-    ...wrapPdfLine("Prices are estimates from the latest supplier invoices and can be checked against the final invoice.")
+    ...(includePrices ? [
+      { text: "Expected order value", size: 11 },
+      ...wrapPdfLine(`Subtotal before VAT: ${formatPdfMoney(totals.net)}`),
+      ...wrapPdfLine(`VAT: ${formatPdfMoney(totals.vat)}`),
+      ...wrapPdfLine(`Estimated total including VAT: ${formatPdfMoney(totals.net + totals.vat)}`),
+      { text: "", size: 8 },
+      ...wrapPdfLine("Internal copy: prices are estimates from the latest supplier invoices and can be checked against the delivery note.")
+    ] : [])
   ];
 
   const pages = [];
   for (let index = 0; index < detailRows.length; index += linesPerPage) {
     const pageNumber = pages.length + 1;
     pages.push([
-      { text: pageNumber === 1 ? "The Domin Inn - Supplier Stock Order" : "Supplier Stock Order - continued", size: 12 },
+      {
+        text: pageNumber === 1
+          ? `The Domin Inn - ${includePrices ? "Priced Order Copy" : "Supplier Stock Order"}`
+          : `${includePrices ? "Priced Order Copy" : "Supplier Stock Order"} - continued`,
+        size: 12
+      },
       ...(pageNumber > 1 ? [{ text: `Order: ${order.orderNumber}`, size: 9 }] : []),
       { text: "", size: 9 },
       ...detailRows.slice(index, index + linesPerPage)

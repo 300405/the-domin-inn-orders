@@ -10,6 +10,8 @@ const state = {
   search: ""
 };
 
+const ORDER_BACKUP_KEY = "domin-inn-saved-orders-v1";
+
 const els = {
   lowStockCount: document.querySelector("#lowStockCount"),
   catalogStatus: document.querySelector("#catalogStatus"),
@@ -133,6 +135,25 @@ async function loadOrders() {
 
     const data = await response.json();
     state.orders = data.orders || [];
+    const backedUpOrders = readOrderBackup();
+
+    if (backedUpOrders.length) {
+      const serverIds = new Set(state.orders.map((order) => order.id));
+      const missingOrders = backedUpOrders.filter((order) => !serverIds.has(order.id));
+      if (missingOrders.length) {
+        const restoreResponse = await fetch("/api/orders/restore", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orders: missingOrders })
+        });
+        if (restoreResponse.ok) {
+          const restoredData = await restoreResponse.json();
+          state.orders = restoredData.orders || state.orders;
+        }
+      }
+    }
+
+    writeOrderBackup(state.orders);
     if (!state.selectedOrderId && state.orders.length) {
       state.selectedOrderId = state.orders[0].id;
     }
@@ -653,8 +674,10 @@ function renderOrderPreview() {
         <span>${escapeHtml(formatDate(order.createdAt))}</span>
       </div>
       <div class="preview-actions">
-        ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener">Open supplier PDF</a>` : ""}
-        ${order.pdfPath ? `<button class="order-action whatsapp-action" type="button" data-action="share" data-order-id="${escapeHtml(order.id)}">Share to WhatsApp</button>` : ""}
+        ${order.pricedPdfPath ? `<a class="order-action" href="${escapeHtml(order.pricedPdfPath)}" target="_blank" rel="noopener">Our priced PDF</a>` : ""}
+        ${order.pdfPath ? `<a class="order-action" href="${escapeHtml(order.pdfPath)}" target="_blank" rel="noopener">Supplier PDF</a>` : ""}
+        ${order.pdfPath ? `<button class="order-action whatsapp-action" type="button" data-action="whatsapp" data-order-id="${escapeHtml(order.id)}">Send on WhatsApp</button>` : ""}
+        ${order.pdfPath ? `<button class="order-action" type="button" data-action="share" data-order-id="${escapeHtml(order.id)}">Share / Save PDF</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="email" data-order-id="${escapeHtml(order.id)}">Email</button>` : ""}
         ${order.pdfPath ? `<button class="order-action" type="button" data-action="print" data-order-id="${escapeHtml(order.id)}">Print</button>` : ""}
         <button class="order-action is-danger" type="button" data-action="delete" data-order-id="${escapeHtml(order.id)}">Delete</button>
@@ -671,6 +694,7 @@ function renderOrderPreview() {
 
   els.orderPreview.querySelectorAll("button[data-action]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (button.dataset.action === "whatsapp") sendOrderToWhatsApp(button.dataset.orderId);
       if (button.dataset.action === "share") shareOrder(button.dataset.orderId);
       if (button.dataset.action === "email") emailOrder(button.dataset.orderId);
       if (button.dataset.action === "print") printOrder(button.dataset.orderId);
@@ -685,12 +709,24 @@ function getOrderPdfName(order) {
   return `${order.orderNumber}-${datePart}.pdf`;
 }
 
-async function shareOrder(orderId) {
+function sendOrderToWhatsApp(orderId) {
   const order = state.orders.find((entry) => entry.id === orderId);
   if (!order?.pdfPath) return;
 
   const pdfUrl = new URL(order.pdfPath, window.location.origin).href;
-  const fileName = getOrderPdfName(order);
+  const message = [
+    `The Domin Inn supplier order ${order.orderNumber}`,
+    `Open the PDF: ${pdfUrl}`
+  ].join("\n");
+  window.location.href = `https://wa.me/?text=${encodeURIComponent(message)}`;
+}
+
+async function shareOrder(orderId) {
+  const order = state.orders.find((entry) => entry.id === orderId);
+  if (!order?.pricedPdfPath) return;
+
+  const pdfUrl = new URL(order.pricedPdfPath, window.location.origin).href;
+  const fileName = getOrderPdfName(order).replace(/\.pdf$/, "-priced.pdf");
 
   try {
     const response = await fetch(pdfUrl);
@@ -720,6 +756,23 @@ async function shareOrder(orderId) {
     window.open(pdfUrl, "_blank", "noopener");
   } catch (error) {
     if (error.name !== "AbortError") setMessage(error.message || "PDF could not be shared.", "error");
+  }
+}
+
+function readOrderBackup() {
+  try {
+    const orders = JSON.parse(localStorage.getItem(ORDER_BACKUP_KEY) || "[]");
+    return Array.isArray(orders) ? orders : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeOrderBackup(orders) {
+  try {
+    localStorage.setItem(ORDER_BACKUP_KEY, JSON.stringify(orders));
+  } catch {
+    // The server copy remains available when browser storage is unavailable.
   }
 }
 
