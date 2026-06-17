@@ -1083,13 +1083,15 @@ function buildOrderPdf(order, options = {}) {
 function buildSupplierOrderPdf(order, lineItems) {
   const pageWidth = 595;
   const left = 78;
-  const bottom = 55;
+  const bottom = 86;
   const pages = [];
   let commands = [];
   let y = 0;
+  let pageNumber = 0;
 
   const startPage = (continued = false) => {
     commands = [];
+    pageNumber += 1;
     y = 770;
     const orderLabel = supplierOrderLabel(order.orderNumber);
     const title = continued
@@ -1100,6 +1102,7 @@ function buildSupplierOrderPdf(order, lineItems) {
   };
 
   const finishPage = () => {
+    commands.push(pdfText(pageWidth / 2, 46, `Page ${pageNumber}`, 8, "F1", "center"));
     pages.push(commands.join("\n"));
   };
 
@@ -1107,7 +1110,8 @@ function buildSupplierOrderPdf(order, lineItems) {
     const quantity = Number(line.quantity || 0);
     const itemText = `${quantity} x ${line.name}`;
     const itemLines = wrapPlainText(itemText, 62);
-    const rowHeight = Math.max(20, itemLines.length * 16);
+    const lineGap = 17;
+    const rowHeight = Math.max(22, itemLines.length * lineGap);
 
     if (y - rowHeight < bottom) {
       finishPage();
@@ -1115,7 +1119,7 @@ function buildSupplierOrderPdf(order, lineItems) {
     }
 
     itemLines.forEach((row, index) => {
-      commands.push(pdfText(left, y - index * 16, row, 11));
+      commands.push(pdfText(left, y - index * lineGap, row, 11));
     });
     y -= rowHeight;
   };
