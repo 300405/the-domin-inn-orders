@@ -978,6 +978,7 @@ async function submitOrder() {
           name: line.name,
           sku: line.sku,
           supplier: line.supplier,
+          category: line.category,
           packSize: line.packSize,
           quantity: line.quantity,
           unitCost: line.unitCost
@@ -991,9 +992,10 @@ async function submitOrder() {
     state.cart.clear();
     renderCart();
     renderCatalog();
-    setMessage(`Submitted ${data.orderNumber} for ${data.lineCount} stock lines.`, "success");
+    setMessage(`Submitted ${data.orderNumber}. Editable backup saved for adding extras.`, "success");
     state.selectedOrderId = data.orderId;
     await loadOrders();
+    await loadDrafts();
     closeCartPreview();
     await showPreviousOrders();
   } catch (error) {

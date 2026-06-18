@@ -667,6 +667,7 @@ async function createOrder(payload) {
       name: cleanText(line.name),
       sku: cleanText(line.sku),
       supplier: cleanText(line.supplier),
+      category: cleanText(line.category),
       packSize: cleanText(line.packSize),
       quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
       unitCost: Number(line.unitCost || 0),
@@ -675,11 +676,14 @@ async function createOrder(payload) {
   };
 
   const files = writeOrder(order);
+  const backupDraft = writeSubmittedOrderBackup(order);
   sendOrderNotification(order, files);
 
   return {
     orderId: order.id,
     orderNumber: order.orderNumber,
+    backupDraftId: backupDraft.id,
+    backupDraftNumber: backupDraft.draftNumber,
     lineCount: order.lineItems.length,
     createdAt: order.createdAt
   };
@@ -744,6 +748,34 @@ function saveDraft(payload) {
 
   fs.writeFileSync(path.join(DRAFTS_DIR, `${draft.id}.json`), JSON.stringify(draft, null, 2));
   return { draft };
+}
+
+function writeSubmittedOrderBackup(order) {
+  const now = new Date().toISOString();
+  const draft = {
+    id: `backup-${order.id}`,
+    draftNumber: `BACKUP-${order.orderNumber}`,
+    sourceOrderId: order.id,
+    sourceOrderNumber: order.orderNumber,
+    neededBy: order.neededBy,
+    note: order.note,
+    createdAt: now,
+    updatedAt: now,
+    lineItems: order.lineItems.map((line) => ({
+      id: line.id,
+      name: line.name,
+      sku: line.sku,
+      supplier: line.supplier,
+      category: line.category,
+      packSize: line.packSize,
+      quantity: line.quantity,
+      unitCost: line.unitCost,
+      vatRate: line.vatRate
+    }))
+  };
+
+  fs.writeFileSync(path.join(DRAFTS_DIR, `${draft.id}.json`), JSON.stringify(draft, null, 2));
+  return draft;
 }
 
 function findDraft(draftId) {
@@ -1084,6 +1116,10 @@ function buildSupplierOrderPdf(order, lineItems) {
   const pageWidth = 595;
   const left = 78;
   const bottom = 86;
+  const supplierLines = [...lineItems].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "en-GB", {
+    numeric: true,
+    sensitivity: "base"
+  }));
   const pages = [];
   let commands = [];
   let y = 0;
@@ -1125,7 +1161,7 @@ function buildSupplierOrderPdf(order, lineItems) {
   };
 
   startPage();
-  lineItems.forEach(addSupplierRow);
+  supplierLines.forEach(addSupplierRow);
   finishPage();
 
   return renderPdfDocument(pages);
