@@ -776,6 +776,10 @@ function writeOrderBackup(orders) {
   }
 }
 
+function removeOrderBackup(orderId) {
+  writeOrderBackup(readOrderBackup().filter((order) => order.id !== orderId));
+}
+
 async function emailOrder(orderId) {
   const order = state.orders.find((entry) => entry.id === orderId);
   if (!order) return;
@@ -823,8 +827,10 @@ async function deleteSavedOrder(orderId) {
   }
 
   state.selectedOrderId = null;
+  removeOrderBackup(orderId);
   await loadOrders();
-  setMessage(`${order.orderNumber} deleted.`, "success");
+  await loadDrafts();
+  setMessage(`${order.orderNumber} deleted from previous orders and saved backups.`, "success");
 }
 
 function changeQuantity(itemId, action) {

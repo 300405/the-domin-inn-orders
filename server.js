@@ -11,6 +11,7 @@ const ORDERS_DIR = path.join(DATA_DIR, "orders");
 const DRAFTS_DIR = path.join(DATA_DIR, "draft-orders");
 const STOCK_FILE = path.join(DATA_DIR, "stock-items.json");
 const SEED_STOCK_FILE = path.join(ROOT, "stock-items.json");
+const DELETED_ORDERS_FILE = path.join(DATA_DIR, "deleted-orders.json");
 const MINIMUM_STOCK_ITEMS = 20;
 const REMOVED_DUPLICATE_STOCK_IDS = new Set([
   "square-smirnoff-vodka",
@@ -962,7 +963,48 @@ function deleteOrder(orderId) {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   }
 
-  return { deleted: true, orderId };
+  recordDeletedOrder(orderId);
+  const deletedDrafts = deleteDraftsForOrder(orderId);
+
+  return { deleted: true, orderId, deletedDrafts };
+}
+
+function deleteDraftsForOrder(orderId) {
+  const deletedDrafts = [];
+
+  for (const fileName of fs.readdirSync(DRAFTS_DIR).filter((entry) => entry.endsWith(".json"))) {
+    const filePath = path.join(DRAFTS_DIR, fileName);
+    try {
+      const draft = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      if (draft.sourceOrderId === orderId || draft.id === `backup-${orderId}`) {
+        fs.unlinkSync(filePath);
+        deletedDrafts.push(draft.id);
+      }
+    } catch {
+      // Ignore damaged draft files so one bad file cannot block deleting an order.
+    }
+  }
+
+  return deletedDrafts;
+}
+
+function readDeletedOrderIds() {
+  try {
+    const ids = JSON.parse(fs.readFileSync(DELETED_ORDERS_FILE, "utf8"));
+    return Array.isArray(ids) ? new Set(ids.map(cleanText).filter(Boolean)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function writeDeletedOrderIds(ids) {
+  fs.writeFileSync(DELETED_ORDERS_FILE, JSON.stringify([...ids], null, 2));
+}
+
+function recordDeletedOrder(orderId) {
+  const ids = readDeletedOrderIds();
+  ids.add(cleanText(orderId));
+  writeDeletedOrderIds(ids);
 }
 
 function findSavedOrder(orderId) {
@@ -1007,13 +1049,14 @@ function restoreOrders(payload) {
   const incomingOrders = Array.isArray(payload.orders) ? payload.orders : [];
   const existingOrders = readOrders();
   const existingIds = new Set(existingOrders.map((order) => order.id));
+  const deletedIds = readDeletedOrderIds();
 
   for (const candidate of incomingOrders.slice(0, 250)) {
     const id = cleanText(candidate.id);
     const orderNumber = cleanText(candidate.orderNumber);
     const createdAt = cleanText(candidate.createdAt);
     const lineItems = Array.isArray(candidate.lineItems) ? candidate.lineItems : [];
-    if (!id || !orderNumber || !createdAt || !lineItems.length || existingIds.has(id)) continue;
+    if (!id || !orderNumber || !createdAt || !lineItems.length || existingIds.has(id) || deletedIds.has(id)) continue;
 
     const restoredOrder = {
       id,
