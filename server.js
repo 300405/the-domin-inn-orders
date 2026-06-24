@@ -627,7 +627,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET" && url.pathname === "/api/orders") {
-      return sendJson(response, 200, { orders: await readOrders() });
+      return sendJson(response, 200, { orders: await readOrders(), cloudStorage: hasSupabase() });
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/orders/") && url.pathname.endsWith("/priced-pdf")) {

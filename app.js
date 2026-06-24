@@ -137,7 +137,7 @@ async function loadOrders() {
     state.orders = data.orders || [];
     const backedUpOrders = readOrderBackup();
 
-    if (backedUpOrders.length) {
+    if (backedUpOrders.length && !data.cloudStorage) {
       const serverIds = new Set(state.orders.map((order) => order.id));
       const missingOrders = backedUpOrders.filter((order) => !serverIds.has(order.id));
       if (missingOrders.length) {
