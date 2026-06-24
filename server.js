@@ -12,6 +12,8 @@ const DRAFTS_DIR = path.join(DATA_DIR, "draft-orders");
 const STOCK_FILE = path.join(DATA_DIR, "stock-items.json");
 const SEED_STOCK_FILE = path.join(ROOT, "stock-items.json");
 const DELETED_ORDERS_FILE = path.join(DATA_DIR, "deleted-orders.json");
+const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const MINIMUM_STOCK_ITEMS = 20;
 const REMOVED_DUPLICATE_STOCK_IDS = new Set([
   "square-smirnoff-vodka",
@@ -552,6 +554,38 @@ function isAuthorised(request) {
   return suppliedPassword === password;
 }
 
+function hasSupabase() {
+  return Boolean(SUPABASE_URL && SUPABASE_SECRET_KEY);
+}
+
+async function supabaseRequest(pathname, options = {}) {
+  if (!hasSupabase()) {
+    const error = new Error("Supabase is not configured.");
+    error.statusCode = 500;
+    throw error;
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_SECRET_KEY,
+      Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    }
+  });
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.hint || `Supabase returned ${response.status}`);
+    error.statusCode = response.status;
+    throw error;
+  }
+
+  return data;
+}
+
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
@@ -564,7 +598,7 @@ const server = http.createServer(async (request, response) => {
 
     if (request.method === "GET" && url.pathname.startsWith("/supplier-order/") && url.pathname.endsWith(".pdf")) {
       const orderId = decodeURIComponent(url.pathname.replace("/supplier-order/", "").replace(/\.pdf$/, ""));
-      return sendSavedOrderPdf(orderId, response, false);
+      return await sendSavedOrderPdf(orderId, response, false);
     }
 
     if (!isAuthorised(request)) {
@@ -593,37 +627,37 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET" && url.pathname === "/api/orders") {
-      return sendJson(response, 200, { orders: readOrders() });
+      return sendJson(response, 200, { orders: await readOrders() });
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/orders/") && url.pathname.endsWith("/priced-pdf")) {
       const orderId = decodeURIComponent(url.pathname.replace("/api/orders/", "").replace(/\/priced-pdf$/, ""));
-      return sendSavedOrderPdf(orderId, response, true);
+      return await sendSavedOrderPdf(orderId, response, true);
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/orders/") && url.pathname.endsWith("/pdf")) {
       const orderId = decodeURIComponent(url.pathname.replace("/api/orders/", "").replace(/\/pdf$/, ""));
-      return sendSavedOrderPdf(orderId, response, false);
+      return await sendSavedOrderPdf(orderId, response, false);
     }
 
     if (request.method === "POST" && url.pathname === "/api/orders/restore") {
-      return sendJson(response, 200, restoreOrders(await readJson(request)));
+      return sendJson(response, 200, await restoreOrders(await readJson(request)));
     }
 
     if (request.method === "GET" && url.pathname === "/api/drafts") {
-      return sendJson(response, 200, { drafts: readDrafts() });
+      return sendJson(response, 200, { drafts: await readDrafts() });
     }
 
     if (request.method === "POST" && url.pathname === "/api/drafts") {
-      return sendJson(response, 200, saveDraft(await readJson(request)));
+      return sendJson(response, 200, await saveDraft(await readJson(request)));
     }
 
     if (request.method === "DELETE" && url.pathname.startsWith("/api/drafts/")) {
-      return sendJson(response, 200, deleteDraft(decodeURIComponent(url.pathname.replace("/api/drafts/", ""))));
+      return sendJson(response, 200, await deleteDraft(decodeURIComponent(url.pathname.replace("/api/drafts/", ""))));
     }
 
     if (request.method === "DELETE" && url.pathname.startsWith("/api/orders/")) {
-      return sendJson(response, 200, deleteOrder(decodeURIComponent(url.pathname.replace("/api/orders/", ""))));
+      return sendJson(response, 200, await deleteOrder(decodeURIComponent(url.pathname.replace("/api/orders/", ""))));
     }
 
     if (request.method === "POST" && url.pathname.startsWith("/api/orders/") && url.pathname.endsWith("/email")) {
@@ -649,7 +683,7 @@ server.listen(PORT, HOST, () => {
 
 async function createOrder(payload) {
   const lineItems = Array.isArray(payload.lineItems) ? payload.lineItems : [];
-  const existingOrders = readOrders();
+  const existingOrders = await readOrders();
 
   if (!lineItems.length) {
     const error = new Error("The order needs at least one stock line.");
@@ -676,8 +710,8 @@ async function createOrder(payload) {
     }))
   };
 
-  const files = writeOrder(order);
-  const backupDraft = writeSubmittedOrderBackup(order);
+  const files = await writeOrder(order);
+  const backupDraft = await writeSubmittedOrderBackup(order);
   sendOrderNotification(order, files);
 
   return {
@@ -690,7 +724,189 @@ async function createOrder(payload) {
   };
 }
 
+function calculateOrderTotals(lineItems) {
+  return lineItems.reduce((summary, line) => {
+    const net = Number(line.unitCost || 0) * Number(line.quantity || 0);
+    const vatRate = Number(line.vatRate ?? (ZERO_RATE_VAT_ITEM_IDS.has(cleanText(line.id)) ? 0 : 0.2));
+    summary.net = Number((summary.net + net).toFixed(2));
+    summary.vat = Number((summary.vat + net * vatRate).toFixed(2));
+    summary.gross = Number((summary.net + summary.vat).toFixed(2));
+    return summary;
+  }, { net: 0, vat: 0, gross: 0 });
+}
+
+function orderBaseName(order) {
+  return `${order.orderNumber}-${String(order.createdAt || new Date().toISOString()).slice(0, 10)}`;
+}
+
+function ensureSavedOrderPdfFile(savedOrder) {
+  const pdfPath = path.join(ORDERS_DIR, savedOrder.pdfFileName);
+  fs.writeFileSync(pdfPath, buildOrderPdf(savedOrder.order, { includePrices: false }));
+  return { pdfPath };
+}
+
+function orderFromSupabaseRow(row) {
+  const metadata = row.totals && typeof row.totals === "object" ? row.totals : {};
+  const lineItems = Array.isArray(row.items) ? row.items : [];
+  return {
+    id: row.id,
+    orderNumber: row.order_number,
+    neededBy: row.needed_by || "",
+    note: row.notes || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lineItems,
+    sourceOrderId: metadata.sourceOrderId || "",
+    sourceOrderNumber: metadata.sourceOrderNumber || "",
+    pdfPath: row.status === "submitted" ? `/supplier-order/${encodeURIComponent(row.id)}.pdf` : "",
+    pricedPdfPath: row.status === "submitted" ? `/api/orders/${encodeURIComponent(row.id)}/priced-pdf` : "",
+    pdfFileName: row.supplier_pdf_name || `${row.order_number}-${String(row.created_at || "").slice(0, 10)}.pdf`
+  };
+}
+
+function draftFromSupabaseRow(row) {
+  const metadata = row.totals && typeof row.totals === "object" ? row.totals : {};
+  return {
+    id: row.id,
+    draftNumber: row.order_number,
+    sourceOrderId: metadata.sourceOrderId || "",
+    sourceOrderNumber: metadata.sourceOrderNumber || "",
+    neededBy: row.needed_by || "",
+    note: row.notes || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lineItems: Array.isArray(row.items) ? row.items : []
+  };
+}
+
+async function readCloudOrders() {
+  const rows = await supabaseRequest("stock_orders?select=*&status=eq.submitted&deleted_at=is.null&order=created_at.desc");
+  return rows.map(orderFromSupabaseRow);
+}
+
+async function readCloudDrafts() {
+  const rows = await supabaseRequest("stock_orders?select=*&status=eq.draft&deleted_at=is.null&order=updated_at.desc");
+  return rows.map(draftFromSupabaseRow);
+}
+
+async function writeCloudOrder(order, baseName = orderBaseName(order)) {
+  const row = {
+    id: order.id,
+    order_number: order.orderNumber,
+    status: "submitted",
+    needed_by: order.neededBy || null,
+    notes: order.note || "",
+    items: order.lineItems,
+    totals: calculateOrderTotals(order.lineItems),
+    supplier_pdf_name: `${baseName}.pdf`,
+    priced_pdf_name: `${baseName}-priced.pdf`,
+    submitted_at: order.createdAt,
+    deleted_at: null,
+    created_at: order.createdAt,
+    updated_at: order.createdAt
+  };
+
+  await supabaseRequest("stock_orders", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=representation" },
+    body: JSON.stringify(row)
+  });
+}
+
+async function writeCloudDraft(draft) {
+  const row = {
+    id: draft.id,
+    order_number: draft.draftNumber,
+    status: "draft",
+    needed_by: draft.neededBy || null,
+    notes: draft.note || "",
+    items: draft.lineItems,
+    totals: {
+      ...calculateOrderTotals(draft.lineItems),
+      sourceOrderId: draft.sourceOrderId || "",
+      sourceOrderNumber: draft.sourceOrderNumber || ""
+    },
+    deleted_at: null,
+    created_at: draft.createdAt,
+    updated_at: draft.updatedAt
+  };
+
+  await supabaseRequest("stock_orders", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=representation" },
+    body: JSON.stringify(row)
+  });
+}
+
+async function findCloudDraft(draftId) {
+  const rows = await supabaseRequest(`stock_orders?select=*&id=eq.${encodeURIComponent(draftId)}&status=eq.draft&deleted_at=is.null&limit=1`);
+  return rows[0] ? draftFromSupabaseRow(rows[0]) : null;
+}
+
+async function deleteCloudDraft(draftId) {
+  const draft = await findCloudDraft(draftId);
+  if (!draft) {
+    const error = new Error("Draft order not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await supabaseRequest(`stock_orders?id=eq.${encodeURIComponent(draftId)}&status=eq.draft`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ deleted_at: new Date().toISOString() })
+  });
+
+  return { deleted: true, draftId };
+}
+
+async function findCloudSavedOrder(orderId) {
+  const rows = await supabaseRequest(`stock_orders?select=*&id=eq.${encodeURIComponent(orderId)}&status=eq.submitted&deleted_at=is.null&limit=1`);
+  if (!rows[0]) return null;
+
+  const order = orderFromSupabaseRow(rows[0]);
+  const baseName = order.pdfFileName.replace(/\.pdf$/, "");
+  return { order, baseName, pdfFileName: order.pdfFileName };
+}
+
+async function deleteCloudOrder(orderId) {
+  const savedOrder = await findCloudSavedOrder(orderId);
+  if (!savedOrder) {
+    const error = new Error("Order not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const deletedAt = new Date().toISOString();
+  await supabaseRequest(`stock_orders?id=eq.${encodeURIComponent(orderId)}&status=eq.submitted`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ deleted_at: deletedAt })
+  });
+  const deletedDrafts = await deleteCloudDraftsForOrder(orderId, deletedAt);
+  return { deleted: true, orderId, deletedDrafts };
+}
+
+async function deleteCloudDraftsForOrder(orderId, deletedAt = new Date().toISOString()) {
+  const rows = await supabaseRequest(`stock_orders?select=id,totals&status=eq.draft&deleted_at=is.null`);
+  const matchingIds = rows
+    .filter((row) => row.id === `backup-${orderId}` || row.totals?.sourceOrderId === orderId)
+    .map((row) => row.id);
+
+  for (const draftId of matchingIds) {
+    await supabaseRequest(`stock_orders?id=eq.${encodeURIComponent(draftId)}&status=eq.draft`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ deleted_at: deletedAt })
+    });
+  }
+
+  return matchingIds;
+}
+
 function readOrders() {
+  if (hasSupabase()) return readCloudOrders();
+
   return fs.readdirSync(ORDERS_DIR)
     .filter((fileName) => fileName.endsWith(".json"))
     .map((fileName) => {
@@ -709,13 +925,15 @@ function readOrders() {
 }
 
 function readDrafts() {
+  if (hasSupabase()) return readCloudDrafts();
+
   return fs.readdirSync(DRAFTS_DIR)
     .filter((fileName) => fileName.endsWith(".json"))
     .map((fileName) => JSON.parse(fs.readFileSync(path.join(DRAFTS_DIR, fileName), "utf8")))
     .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
 }
 
-function saveDraft(payload) {
+async function saveDraft(payload) {
   const lineItems = Array.isArray(payload.lineItems) ? payload.lineItems : [];
 
   if (!lineItems.length) {
@@ -724,8 +942,8 @@ function saveDraft(payload) {
     throw error;
   }
 
-  const existingDraft = payload.id ? findDraft(cleanText(payload.id)) : null;
-  const existingDrafts = readDrafts();
+  const existingDraft = payload.id ? await findDraft(cleanText(payload.id)) : null;
+  const existingDrafts = await readDrafts();
   const now = new Date().toISOString();
   const draft = {
     id: existingDraft?.id || randomUUID(),
@@ -747,11 +965,16 @@ function saveDraft(payload) {
     }))
   };
 
+  if (hasSupabase()) {
+    await writeCloudDraft(draft);
+    return { draft };
+  }
+
   fs.writeFileSync(path.join(DRAFTS_DIR, `${draft.id}.json`), JSON.stringify(draft, null, 2));
   return { draft };
 }
 
-function writeSubmittedOrderBackup(order) {
+async function writeSubmittedOrderBackup(order) {
   const now = new Date().toISOString();
   const draft = {
     id: `backup-${order.id}`,
@@ -775,17 +998,26 @@ function writeSubmittedOrderBackup(order) {
     }))
   };
 
+  if (hasSupabase()) {
+    await writeCloudDraft(draft);
+    return draft;
+  }
+
   fs.writeFileSync(path.join(DRAFTS_DIR, `${draft.id}.json`), JSON.stringify(draft, null, 2));
   return draft;
 }
 
 function findDraft(draftId) {
+  if (hasSupabase()) return findCloudDraft(draftId);
+
   const filePath = path.join(DRAFTS_DIR, `${draftId}.json`);
   if (!fs.existsSync(filePath)) return null;
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function deleteDraft(draftId) {
+async function deleteDraft(draftId) {
+  if (hasSupabase()) return deleteCloudDraft(draftId);
+
   const filePath = path.join(DRAFTS_DIR, `${draftId}.json`);
 
   if (!fs.existsSync(filePath)) {
@@ -798,10 +1030,12 @@ function deleteDraft(draftId) {
   return { deleted: true, draftId };
 }
 
-function writeOrder(order) {
+async function writeOrder(order) {
   const baseName = `${order.orderNumber}-${order.createdAt.slice(0, 10)}`;
   const jsonPath = path.join(ORDERS_DIR, `${baseName}.json`);
   const pdfPath = path.join(ORDERS_DIR, `${baseName}.pdf`);
+
+  if (hasSupabase()) await writeCloudOrder(order, baseName);
 
   fs.writeFileSync(jsonPath, JSON.stringify(order, null, 2));
   fs.writeFileSync(pdfPath, buildOrderPdf(order, { includePrices: false }));
@@ -929,16 +1163,14 @@ async function sendOrderViaResend(order, files, options = {}) {
 }
 
 async function emailSavedOrder(orderId) {
-  const savedOrder = findSavedOrder(orderId);
+  const savedOrder = await findSavedOrder(orderId);
   if (!savedOrder) {
     const error = new Error("Order not found.");
     error.statusCode = 404;
     throw error;
   }
 
-  const files = {
-    pdfPath: path.join(ORDERS_DIR, savedOrder.pdfFileName)
-  };
+  const files = ensureSavedOrderPdfFile(savedOrder);
 
   await sendOrderNotification(savedOrder.order, files, { throwOnError: true });
   return {
@@ -948,8 +1180,10 @@ async function emailSavedOrder(orderId) {
   };
 }
 
-function deleteOrder(orderId) {
-  const savedOrder = findSavedOrder(orderId);
+async function deleteOrder(orderId) {
+  if (hasSupabase()) return deleteCloudOrder(orderId);
+
+  const savedOrder = await findSavedOrder(orderId);
 
   if (!savedOrder) {
     const error = new Error("Order not found.");
@@ -964,12 +1198,14 @@ function deleteOrder(orderId) {
   }
 
   recordDeletedOrder(orderId);
-  const deletedDrafts = deleteDraftsForOrder(orderId);
+  const deletedDrafts = await deleteDraftsForOrder(orderId);
 
   return { deleted: true, orderId, deletedDrafts };
 }
 
-function deleteDraftsForOrder(orderId) {
+async function deleteDraftsForOrder(orderId) {
+  if (hasSupabase()) return deleteCloudDraftsForOrder(orderId);
+
   const deletedDrafts = [];
 
   for (const fileName of fs.readdirSync(DRAFTS_DIR).filter((entry) => entry.endsWith(".json"))) {
@@ -1008,6 +1244,8 @@ function recordDeletedOrder(orderId) {
 }
 
 function findSavedOrder(orderId) {
+  if (hasSupabase()) return findCloudSavedOrder(orderId);
+
   const jsonFiles = fs.readdirSync(ORDERS_DIR).filter((fileName) => fileName.endsWith(".json"));
 
   for (const fileName of jsonFiles) {
@@ -1026,8 +1264,8 @@ function findSavedOrder(orderId) {
   return null;
 }
 
-function sendSavedOrderPdf(orderId, response, includePrices) {
-  const savedOrder = findSavedOrder(orderId);
+async function sendSavedOrderPdf(orderId, response, includePrices) {
+  const savedOrder = await findSavedOrder(orderId);
   if (!savedOrder) {
     return sendJson(response, 404, { message: "Order report not found." });
   }
@@ -1045,9 +1283,9 @@ function sendSavedOrderPdf(orderId, response, includePrices) {
   response.end(pdf);
 }
 
-function restoreOrders(payload) {
+async function restoreOrders(payload) {
   const incomingOrders = Array.isArray(payload.orders) ? payload.orders : [];
-  const existingOrders = readOrders();
+  const existingOrders = await readOrders();
   const existingIds = new Set(existingOrders.map((order) => order.id));
   const deletedIds = readDeletedOrderIds();
 
@@ -1075,11 +1313,11 @@ function restoreOrders(payload) {
         vatRate: Number(line.vatRate ?? (ZERO_RATE_VAT_ITEM_IDS.has(cleanText(line.id)) ? 0 : 0.2))
       }))
     };
-    writeOrder(restoredOrder);
+    await writeOrder(restoredOrder);
     existingIds.add(id);
   }
 
-  return { orders: readOrders() };
+  return { orders: await readOrders() };
 }
 
 function buildOrderPdf(order, options = {}) {

@@ -692,7 +692,10 @@ textarea {
 }
 
 .cart-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto auto;
   padding: 16px;
+  overflow: hidden;
 }
 
 .cart-head {
@@ -745,7 +748,9 @@ textarea {
   flex: 1;
   flex-direction: column;
   gap: 10px;
-  min-height: 260px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .cart-line {
