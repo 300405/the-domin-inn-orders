@@ -977,7 +977,7 @@ async function saveDraft(payload) {
 async function writeSubmittedOrderBackup(order) {
   const now = new Date().toISOString();
   const draft = {
-    id: `backup-${order.id}`,
+    id: hasSupabase() ? randomUUID() : `backup-${order.id}`,
     draftNumber: `BACKUP-${order.orderNumber}`,
     sourceOrderId: order.id,
     sourceOrderNumber: order.orderNumber,
