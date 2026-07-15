@@ -163,10 +163,29 @@ label {
 }
 
 .orders-folder {
-  display: flex;
+  position: fixed;
+  top: 18px;
+  bottom: 18px;
+  left: 18px;
+  z-index: 40;
+  display: none;
+  width: min(420px, calc(100vw - 36px));
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
   padding: 16px;
+}
+
+.orders-folder.is-open {
+  display: flex;
+}
+
+body.orders-view-open::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: rgba(15, 23, 42, 0.32);
 }
 
 .folder-head,
@@ -189,7 +208,7 @@ label {
 }
 
 .folder-close-button {
-  display: none;
+  display: grid;
   place-items: center;
   width: 42px;
   height: 42px;
@@ -456,10 +475,6 @@ textarea {
   background: #fff;
 }
 
-.orders-folder.is-highlighted {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16), var(--shadow);
-}
 
 .category-tabs {
   display: flex;
@@ -1029,14 +1044,34 @@ textarea {
   }
 
   .app-shell {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
     padding: 12px 12px 96px;
+  }
+
+  .workspace {
+    order: 1;
   }
 
   .rail {
     position: static;
+    order: 2;
     max-height: none;
-    margin-bottom: 14px;
+    margin-bottom: 0;
+  }
+
+  .brand-lockup,
+  .status-panel {
+    display: none;
+  }
+
+  .order-form {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: var(--shadow);
+    padding: 14px;
   }
 
   .cart-panel {
@@ -1133,11 +1168,25 @@ textarea {
   }
 
   .topbar,
-  .order-row,
   .cart-line {
     align-items: stretch;
     grid-template-columns: 1fr;
     flex-direction: column;
+  }
+
+  .topbar {
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .topbar h2 {
+    font-size: 1.65rem;
+  }
+
+  .order-row {
+    align-items: center;
+    flex-direction: row;
+    justify-content: flex-start;
   }
 
   .toolbar {
@@ -1157,8 +1206,60 @@ textarea {
   }
 
   .item-card {
-    min-height: 160px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 0;
     padding: 14px;
+  }
+
+  .item-card header {
+    min-width: 0;
+  }
+
+  .item-card h3 {
+    font-size: 1rem;
+  }
+
+  .item-price {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .item-price strong {
+    font-size: 0.9rem;
+  }
+
+  .card-title-row {
+    align-items: flex-start;
+  }
+
+  .card-actions {
+    gap: 5px;
+  }
+
+  .stock-pill {
+    display: none;
+  }
+
+  .item-edit-button {
+    min-height: 34px;
+    padding: 7px 10px;
+  }
+
+  .catalog-stepper {
+    flex: 0 0 auto;
+  }
+
+  .catalog-stepper span,
+  .add-button {
+    height: 38px;
+  }
+
+  .add-button {
+    width: 42px;
+    font-size: 1.3rem;
   }
 
   .settings-grid,
@@ -1167,25 +1268,17 @@ textarea {
   }
 
   .orders-menu-button {
-    position: fixed;
-    top: max(12px, env(safe-area-inset-top));
-    right: 12px;
-    z-index: 15;
-    box-shadow: 0 10px 26px rgba(25, 39, 35, 0.16);
-  }
-
-  .orders-folder {
-    display: none;
+    position: static;
+    width: 46px;
+    height: 46px;
+    box-shadow: none;
   }
 
   .orders-folder.is-open {
-    position: fixed;
     inset: 0;
-    z-index: 40;
-    display: flex;
+    width: auto;
     max-height: 100dvh;
     margin: 0;
-    overflow-y: auto;
     border: 0;
     border-radius: 0;
     padding:
@@ -1300,5 +1393,22 @@ textarea {
   .prices-table-wrap {
     max-height: none;
     overflow: visible;
+  }
+}
+
+
+@media (min-width: 801px) and (max-width: 1280px) {
+  .app-shell {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+
+  .cart-panel {
+    position: static;
+    grid-column: 1 / -1;
+    max-height: none;
+  }
+
+  .catalog-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
 }

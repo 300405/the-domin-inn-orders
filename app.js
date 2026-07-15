@@ -193,16 +193,9 @@ async function showPreviousOrders() {
   const ordersFolder = document.querySelector(".orders-folder");
   if (!ordersFolder) return;
 
-  if (window.matchMedia("(max-width: 800px)").matches) {
-    ordersFolder.classList.add("is-open");
-    document.body.classList.add("orders-view-open");
-    els.closeOrdersFolder.focus();
-    return;
-  }
-
-  ordersFolder.scrollIntoView({ behavior: "smooth", block: "start" });
-  ordersFolder.classList.add("is-highlighted");
-  window.setTimeout(() => ordersFolder.classList.remove("is-highlighted"), 1400);
+  ordersFolder.classList.add("is-open");
+  document.body.classList.add("orders-view-open");
+  els.closeOrdersFolder.focus();
 }
 
 function closePreviousOrders() {
