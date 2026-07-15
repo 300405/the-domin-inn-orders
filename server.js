@@ -75,6 +75,7 @@ const REMOVED_DUPLICATE_STOCK_IDS = new Set([
 const ZERO_RATE_VAT_ITEM_IDS = new Set([
   "snack-pork-scratchings"
 ]);
+const CATALOG_ROW_ID = "stock-catalogue-v1";
 
 const SQUARE_CATALOGUE_PATCHES = [
   { id: "baby-bulmers-500", name: "Bulmers 500ml", category: "Bottles", unitCost: 1.29 },
@@ -351,7 +352,7 @@ function createStockItem(payload) {
     sku: id.toUpperCase().slice(0, 24),
     category,
     supplier: "",
-    packSize: "Regular",
+    packSize: cleanText(payload.packSize) || "Regular",
     onHand: 0,
     reorderPoint: 1,
     reorderQuantity: 1,
@@ -384,6 +385,9 @@ function updateStockItem(itemId, payload) {
 
   item.name = name;
   if (category) item.category = category;
+  if (Object.prototype.hasOwnProperty.call(payload, "packSize")) {
+    item.packSize = cleanText(payload.packSize) || "Regular";
+  }
   if (Object.prototype.hasOwnProperty.call(payload, "unitCost")) {
     item.unitCost = parseMoney(payload.unitCost);
   }
@@ -558,6 +562,160 @@ function hasSupabase() {
   return Boolean(SUPABASE_URL && SUPABASE_SECRET_KEY);
 }
 
+function normaliseStockItems(items) {
+  return (Array.isArray(items) ? items : [])
+    .filter((item) => item && cleanText(item.name))
+    .map((item) => ({
+      id: cleanText(item.id) || slugify(item.name),
+      name: cleanText(item.name),
+      sku: cleanText(item.sku),
+      category: cleanText(item.category) || "Bottles",
+      supplier: cleanText(item.supplier),
+      packSize: cleanText(item.packSize) || "Regular",
+      onHand: Math.max(0, Math.floor(Number(item.onHand || 0))),
+      reorderPoint: Math.max(1, Math.floor(Number(item.reorderPoint || 1))),
+      reorderQuantity: Math.max(1, Math.floor(Number(item.reorderQuantity || 1))),
+      parLevel: Math.max(1, Math.floor(Number(item.parLevel || 2))),
+      unitCost: parseMoney(item.unitCost)
+    }))
+    .sort((a, b) => {
+      const categorySort = a.category.localeCompare(b.category);
+      return categorySort || a.name.localeCompare(b.name);
+    });
+}
+
+async function readCatalogItems() {
+  if (!hasSupabase()) return readStockItems();
+
+  try {
+    return await readCloudStockItems();
+  } catch (error) {
+    console.warn(`Using local stock catalogue: ${error.message}`);
+    return readStockItems();
+  }
+}
+
+async function readCloudStockItems() {
+  const rows = await supabaseRequest(`stock_orders?select=items&id=eq.${encodeURIComponent(CATALOG_ROW_ID)}&limit=1`);
+  const cloudItems = rows?.[0]?.items;
+
+  if (Array.isArray(cloudItems) && cloudItems.length >= MINIMUM_STOCK_ITEMS) {
+    return normaliseStockItems(cloudItems);
+  }
+
+  const seededItems = normaliseStockItems(readStockItems());
+  await writeCloudStockItems(seededItems);
+  return seededItems;
+}
+
+async function writeCloudStockItems(items) {
+  const now = new Date().toISOString();
+  await supabaseRequest("stock_orders", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({
+      id: CATALOG_ROW_ID,
+      order_number: "CATALOGUE",
+      status: "catalogue",
+      needed_by: null,
+      notes: "Shared stock catalogue",
+      items: normaliseStockItems(items),
+      totals: { kind: "stock_catalogue", itemCount: items.length },
+      deleted_at: null,
+      created_at: now,
+      updated_at: now
+    })
+  });
+}
+
+async function createCatalogItem(payload) {
+  if (!hasSupabase()) return createStockItem(payload);
+
+  const name = cleanText(payload.name);
+  const category = cleanText(payload.category) || "Bottles";
+  if (!name) {
+    const error = new Error("Item name is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const items = await readCatalogItems();
+  const baseId = slugify(name);
+  let id = baseId;
+  let suffix = 2;
+  while (items.some((item) => item.id === id)) {
+    id = `${baseId}-${suffix}`;
+    suffix += 1;
+  }
+
+  const item = {
+    id,
+    name,
+    sku: id.toUpperCase().slice(0, 24),
+    category,
+    supplier: "",
+    packSize: cleanText(payload.packSize) || "Regular",
+    onHand: 0,
+    reorderPoint: 1,
+    reorderQuantity: 1,
+    parLevel: 2,
+    unitCost: parseMoney(payload.unitCost)
+  };
+
+  items.push(item);
+  await writeCloudStockItems(items);
+  return { item };
+}
+
+async function updateCatalogItem(itemId, payload) {
+  if (!hasSupabase()) return updateStockItem(itemId, payload);
+
+  const name = cleanText(payload.name);
+  const category = cleanText(payload.category);
+  const items = await readCatalogItems();
+  const item = items.find((entry) => entry.id === itemId);
+
+  if (!item) {
+    const error = new Error("Stock item not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!name) {
+    const error = new Error("Item name is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  item.name = name;
+  if (category) item.category = category;
+  if (Object.prototype.hasOwnProperty.call(payload, "packSize")) {
+    item.packSize = cleanText(payload.packSize) || "Regular";
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "unitCost")) {
+    item.unitCost = parseMoney(payload.unitCost);
+  }
+
+  await writeCloudStockItems(items);
+  return { item };
+}
+
+async function deleteCatalogItem(itemId) {
+  if (!hasSupabase()) return deleteStockItem(itemId);
+
+  const items = await readCatalogItems();
+  const nextItems = items.filter((item) => item.id !== itemId);
+
+  if (nextItems.length === items.length) {
+    const error = new Error("Stock item not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await writeCloudStockItems(nextItems);
+  return { deleted: true, itemId };
+}
+
 async function supabaseRequest(pathname, options = {}) {
   if (!hasSupabase()) {
     const error = new Error("Supabase is not configured.");
@@ -611,19 +769,19 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET" && url.pathname === "/api/catalog") {
-      return sendJson(response, 200, { items: readStockItems() });
+      return sendJson(response, 200, { items: await readCatalogItems() });
     }
 
     if (request.method === "POST" && url.pathname === "/api/catalog") {
-      return sendJson(response, 201, createStockItem(await readJson(request)));
+      return sendJson(response, 201, await createCatalogItem(await readJson(request)));
     }
 
     if (request.method === "PATCH" && url.pathname.startsWith("/api/catalog/")) {
-      return sendJson(response, 200, updateStockItem(decodeURIComponent(url.pathname.replace("/api/catalog/", "")), await readJson(request)));
+      return sendJson(response, 200, await updateCatalogItem(decodeURIComponent(url.pathname.replace("/api/catalog/", "")), await readJson(request)));
     }
 
     if (request.method === "DELETE" && url.pathname.startsWith("/api/catalog/")) {
-      return sendJson(response, 200, deleteStockItem(decodeURIComponent(url.pathname.replace("/api/catalog/", ""))));
+      return sendJson(response, 200, await deleteCatalogItem(decodeURIComponent(url.pathname.replace("/api/catalog/", ""))));
     }
 
     if (request.method === "GET" && url.pathname === "/api/orders") {

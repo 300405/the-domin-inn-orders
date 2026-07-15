@@ -53,10 +53,12 @@ const els = {
   editItemForm: document.querySelector("#editItemForm"),
   settingsAddName: document.querySelector("#settingsAddName"),
   settingsAddCategory: document.querySelector("#settingsAddCategory"),
+  settingsAddPack: document.querySelector("#settingsAddPack"),
   settingsAddPrice: document.querySelector("#settingsAddPrice"),
   settingsEditItem: document.querySelector("#settingsEditItem"),
   settingsEditName: document.querySelector("#settingsEditName"),
   settingsEditCategory: document.querySelector("#settingsEditCategory"),
+  settingsEditPack: document.querySelector("#settingsEditPack"),
   settingsEditPrice: document.querySelector("#settingsEditPrice"),
   settingsDeleteItem: document.querySelector("#settingsDeleteItem"),
   settingsMessage: document.querySelector("#settingsMessage")
@@ -295,7 +297,7 @@ function renderCatalog() {
             <p class="eyeline">${escapeHtml(item.category)}</p>
             <div class="card-actions">
               <span class="stock-pill">${low ? "Low" : "OK"}</span>
-              <button class="item-delete-button" type="button" data-item-id="${escapeHtml(item.id)}" aria-label="Delete ${escapeHtml(item.name)}" title="Delete item">×</button>
+              <button class="item-edit-button" type="button" data-item-id="${escapeHtml(item.id)}" aria-label="Edit ${escapeHtml(item.name)}" title="Edit item">Edit</button>
             </div>
           </div>
           <h3>${escapeHtml(item.name)}</h3>
@@ -319,8 +321,8 @@ function renderCatalog() {
     button.addEventListener("click", () => addToCart(button.dataset.itemId, 1));
   });
 
-  els.catalogGrid.querySelectorAll(".item-delete-button").forEach((button) => {
-    button.addEventListener("click", () => deleteStockItem(button.dataset.itemId));
+  els.catalogGrid.querySelectorAll(".item-edit-button").forEach((button) => {
+    button.addEventListener("click", () => openSettingsForItem(button.dataset.itemId));
   });
 }
 
@@ -342,6 +344,15 @@ function openSettings() {
   setSettingsMessage("", "");
   els.settingsOverlay.hidden = false;
   els.settingsAddName.focus();
+}
+
+function openSettingsForItem(itemId) {
+  openSettings();
+  if (itemId && state.catalog.some((item) => item.id === itemId)) {
+    els.settingsEditItem.value = itemId;
+    fillSettingsItem();
+    els.settingsEditName.focus();
+  }
 }
 
 function closeSettings() {
@@ -430,6 +441,7 @@ function fillSettingsItem() {
   const item = state.catalog.find((entry) => entry.id === els.settingsEditItem.value);
   els.settingsEditName.value = item?.name || "";
   els.settingsEditCategory.value = item?.category || state.categories[0]?.name || "Bottles";
+  els.settingsEditPack.value = item?.packSize || "";
   els.settingsEditPrice.value = item ? Number(item.unitCost || 0).toFixed(2) : "";
   els.settingsDeleteItem.disabled = !item;
 }
@@ -449,6 +461,7 @@ async function addSettingsItem(event) {
       body: JSON.stringify({
         name,
         category: els.settingsAddCategory.value,
+        packSize: els.settingsAddPack.value.trim(),
         unitCost: parseMoneyInput(els.settingsAddPrice.value)
       })
     });
@@ -456,6 +469,7 @@ async function addSettingsItem(event) {
     if (!response.ok) throw new Error(data.message || "Could not add item.");
 
     els.settingsAddName.value = "";
+    els.settingsAddPack.value = "";
     els.settingsAddPrice.value = "";
     await loadCatalog();
     render();
@@ -482,6 +496,7 @@ async function saveSettingsItem(event) {
       body: JSON.stringify({
         name,
         category: els.settingsEditCategory.value,
+        packSize: els.settingsEditPack.value.trim(),
         unitCost: parseMoneyInput(els.settingsEditPrice.value)
       })
     });

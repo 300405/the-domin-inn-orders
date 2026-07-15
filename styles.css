@@ -505,7 +505,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  min-height: 250px;
+  min-height: 190px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -582,23 +582,21 @@ textarea {
   color: var(--warm);
 }
 
-.item-delete-button {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(180, 35, 24, 0.24);
+.item-edit-button {
+  min-height: 28px;
+  border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  color: var(--danger);
-  font-size: 1rem;
+  color: var(--accent-dark);
+  padding: 4px 8px;
+  font-size: 0.72rem;
   font-weight: 900;
   line-height: 1;
 }
 
-.item-delete-button:hover {
-  border-color: var(--danger);
-  background: var(--danger);
+.item-edit-button:hover {
+  border-color: var(--accent);
+  background: var(--accent);
   color: #fff;
 }
 
@@ -1144,12 +1142,28 @@ textarea {
 
   .toolbar {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 46px;
     width: 100%;
   }
 
   .toolbar input {
     grid-column: 1 / -1;
+    min-height: 52px;
+    font-size: 1rem;
+  }
+
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .item-card {
+    min-height: 160px;
+    padding: 14px;
+  }
+
+  .settings-grid,
+  .prices-summary {
+    grid-template-columns: 1fr;
   }
 
   .orders-menu-button {
