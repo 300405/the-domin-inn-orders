@@ -606,6 +606,43 @@ function normaliseStockItems(items) {
     });
 }
 
+function isMissingSupabaseTableError(error) {
+  return /relation .* does not exist|schema cache|could not find the table|does not exist/i.test(error?.message || "");
+}
+
+function stockItemFromSupabaseRow(row) {
+  return {
+    id: cleanText(row.id),
+    name: cleanText(row.name),
+    sku: cleanText(row.sku),
+    category: cleanText(row.category) || "Bottles",
+    supplier: cleanText(row.supplier),
+    packSize: cleanText(row.pack_size) || "Regular",
+    onHand: Math.max(0, Math.floor(Number(row.on_hand || 0))),
+    reorderPoint: Math.max(1, Math.floor(Number(row.reorder_point || 1))),
+    reorderQuantity: Math.max(1, Math.floor(Number(row.reorder_quantity || 1))),
+    parLevel: Math.max(1, Math.floor(Number(row.par_level || 2))),
+    unitCost: parseMoney(row.unit_cost)
+  };
+}
+
+function stockItemToSupabaseRow(item) {
+  return {
+    id: item.id,
+    name: item.name,
+    sku: item.sku || "",
+    category: item.category || "Bottles",
+    supplier: item.supplier || "",
+    pack_size: item.packSize || "Regular",
+    on_hand: Math.max(0, Math.floor(Number(item.onHand || 0))),
+    reorder_point: Math.max(1, Math.floor(Number(item.reorderPoint || 1))),
+    reorder_quantity: Math.max(1, Math.floor(Number(item.reorderQuantity || 1))),
+    par_level: Math.max(1, Math.floor(Number(item.parLevel || 2))),
+    unit_cost: parseMoney(item.unitCost),
+    hidden: false
+  };
+}
+
 async function readCatalogItems() {
   if (!hasSupabase()) return readStockItems();
 
@@ -618,6 +655,32 @@ async function readCatalogItems() {
 }
 
 async function readCloudStockItems() {
+  try {
+    return await readStockItemsTable();
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await readLegacyCloudStockItems();
+  }
+}
+
+async function readStockItemsTable() {
+  const rows = await supabaseRequest("stock_items?select=*&hidden=is.false&order=category.asc,name.asc");
+  let items = normaliseStockItems(rows.map(stockItemFromSupabaseRow));
+
+  if (items.length < MINIMUM_STOCK_ITEMS) {
+    items = normaliseStockItems(readStockItems());
+    await writeStockItemsTable(items);
+    return items;
+  }
+
+  if (applySharedStockPatches(items)) {
+    await writeStockItemsTable(items);
+  }
+
+  return items;
+}
+
+async function readLegacyCloudStockItems() {
   const rows = await supabaseRequest(`stock_orders?select=items&id=eq.${encodeURIComponent(CATALOG_ROW_ID)}&limit=1`);
   const cloudItems = rows?.[0]?.items;
 
@@ -635,6 +698,24 @@ async function readCloudStockItems() {
 }
 
 async function writeCloudStockItems(items) {
+  try {
+    await writeStockItemsTable(items);
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    await writeLegacyCloudStockItems(items);
+  }
+}
+
+async function writeStockItemsTable(items) {
+  const rows = normaliseStockItems(items).map(stockItemToSupabaseRow);
+  await supabaseRequest("stock_items", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify(rows)
+  });
+}
+
+async function writeLegacyCloudStockItems(items) {
   const now = new Date().toISOString();
   await supabaseRequest("stock_orders", {
     method: "POST",
@@ -728,6 +809,24 @@ async function updateCatalogItem(itemId, payload) {
 
 async function deleteCatalogItem(itemId) {
   if (!hasSupabase()) return deleteStockItem(itemId);
+
+  try {
+    const rows = await supabaseRequest(`stock_items?id=eq.${encodeURIComponent(itemId)}&hidden=is.false&select=id&limit=1`);
+    if (!rows.length) {
+      const error = new Error("Stock item not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await supabaseRequest(`stock_items?id=eq.${encodeURIComponent(itemId)}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ hidden: true })
+    });
+    return { deleted: true, itemId };
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+  }
 
   const items = await readCatalogItems();
   const nextItems = items.filter((item) => item.id !== itemId);
@@ -964,16 +1063,272 @@ function draftFromSupabaseRow(row) {
 }
 
 async function readCloudOrders() {
+  try {
+    return await readOrderTableRows("submitted");
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await readLegacyCloudOrders();
+  }
+}
+
+async function readCloudDrafts() {
+  try {
+    return await readOrderTableRows("draft");
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await readLegacyCloudDrafts();
+  }
+}
+
+async function writeCloudOrder(order, baseName = orderBaseName(order)) {
+  try {
+    await writeOrderTableRow({
+      ...order,
+      status: "submitted",
+      orderNumber: order.orderNumber,
+      sourceOrderId: "",
+      sourceOrderNumber: "",
+      supplierPdfName: `${baseName}.pdf`,
+      pricedPdfName: `${baseName}-priced.pdf`,
+      submittedAt: order.createdAt
+    });
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    await writeLegacyCloudOrder(order, baseName);
+  }
+}
+
+async function writeCloudDraft(draft) {
+  try {
+    await writeOrderTableRow({
+      ...draft,
+      status: "draft",
+      orderNumber: draft.draftNumber,
+      supplierPdfName: "",
+      pricedPdfName: "",
+      submittedAt: null
+    });
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    await writeLegacyCloudDraft(draft);
+  }
+}
+
+async function findCloudDraft(draftId) {
+  try {
+    const draft = await findOrderTableRow(draftId, "draft");
+    return draft ? draftFromOrderTableRow(draft) : null;
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await findLegacyCloudDraft(draftId);
+  }
+}
+
+async function deleteCloudDraft(draftId) {
+  try {
+    const draft = await findCloudDraft(draftId);
+    if (!draft) {
+      const error = new Error("Draft order not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await markOrderTableDeleted(draftId, "draft");
+    return { deleted: true, draftId };
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await deleteLegacyCloudDraft(draftId);
+  }
+}
+
+async function findCloudSavedOrder(orderId) {
+  try {
+    const row = await findOrderTableRow(orderId, "submitted");
+    if (!row) return null;
+
+    const order = orderFromOrderTableRow(row);
+    const baseName = order.pdfFileName.replace(/\.pdf$/, "");
+    return { order, baseName, pdfFileName: order.pdfFileName };
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await findLegacyCloudSavedOrder(orderId);
+  }
+}
+
+async function deleteCloudOrder(orderId) {
+  try {
+    const savedOrder = await findCloudSavedOrder(orderId);
+    if (!savedOrder) {
+      const error = new Error("Order not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const deletedAt = new Date().toISOString();
+    await markOrderTableDeleted(orderId, "submitted", deletedAt);
+    const deletedDrafts = await deleteCloudDraftsForOrder(orderId, deletedAt);
+    return { deleted: true, orderId, deletedDrafts };
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await deleteLegacyCloudOrder(orderId);
+  }
+}
+
+async function deleteCloudDraftsForOrder(orderId, deletedAt = new Date().toISOString()) {
+  try {
+    const rows = await supabaseRequest(`orders?select=id&status=eq.draft&deleted_at=is.null&or=(id.eq.backup-${encodeURIComponent(orderId)},source_order_id.eq.${encodeURIComponent(orderId)})`);
+    const matchingIds = rows.map((row) => row.id);
+    for (const draftId of matchingIds) {
+      await markOrderTableDeleted(draftId, "draft", deletedAt);
+    }
+    return matchingIds;
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await deleteLegacyCloudDraftsForOrder(orderId, deletedAt);
+  }
+}
+
+async function readOrderTableRows(status) {
+  const orderColumn = status === "submitted" ? "created_at.desc" : "updated_at.desc";
+  const rows = await supabaseRequest(`orders?select=*&status=eq.${encodeURIComponent(status)}&deleted_at=is.null&order=${orderColumn}`);
+  const withLines = [];
+  for (const row of rows) {
+    withLines.push({
+      ...row,
+      lineItems: await readOrderTableLines(row.id)
+    });
+  }
+  return status === "submitted" ? withLines.map(orderFromOrderTableRow) : withLines.map(draftFromOrderTableRow);
+}
+
+async function findOrderTableRow(orderId, status) {
+  const rows = await supabaseRequest(`orders?select=*&id=eq.${encodeURIComponent(orderId)}&status=eq.${encodeURIComponent(status)}&deleted_at=is.null&limit=1`);
+  if (!rows[0]) return null;
+  return {
+    ...rows[0],
+    lineItems: await readOrderTableLines(rows[0].id)
+  };
+}
+
+async function readOrderTableLines(orderId) {
+  const rows = await supabaseRequest(`order_lines?select=*&order_id=eq.${encodeURIComponent(orderId)}&order=sort_order.asc`);
+  return rows.map((row) => ({
+    id: cleanText(row.stock_item_id),
+    name: cleanText(row.name),
+    sku: cleanText(row.sku),
+    supplier: cleanText(row.supplier),
+    category: cleanText(row.category),
+    packSize: cleanText(row.pack_size),
+    quantity: Math.max(1, Math.floor(Number(row.quantity || 1))),
+    unitCost: Number(row.unit_cost || 0),
+    vatRate: Number(row.vat_rate ?? 0.2)
+  }));
+}
+
+async function writeOrderTableRow(entry) {
+  const now = new Date().toISOString();
+  const createdAt = entry.createdAt || now;
+  await supabaseRequest("orders", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({
+      id: entry.id,
+      order_number: entry.orderNumber,
+      status: entry.status,
+      needed_by: entry.neededBy || null,
+      notes: entry.note || "",
+      source_order_id: entry.sourceOrderId || null,
+      source_order_number: entry.sourceOrderNumber || null,
+      supplier_pdf_name: entry.supplierPdfName || null,
+      priced_pdf_name: entry.pricedPdfName || null,
+      subtotal: calculateOrderTotals(entry.lineItems).net,
+      vat_total: calculateOrderTotals(entry.lineItems).vat,
+      grand_total: calculateOrderTotals(entry.lineItems).gross,
+      submitted_at: entry.submittedAt || null,
+      deleted_at: null,
+      created_at: createdAt,
+      updated_at: entry.updatedAt || createdAt
+    })
+  });
+
+  await supabaseRequest(`order_lines?order_id=eq.${encodeURIComponent(entry.id)}`, {
+    method: "DELETE",
+    headers: { Prefer: "return=minimal" }
+  });
+
+  const lineRows = (entry.lineItems || []).map((line, index) => ({
+    order_id: entry.id,
+    stock_item_id: cleanText(line.id),
+    name: cleanText(line.name),
+    sku: cleanText(line.sku),
+    supplier: cleanText(line.supplier),
+    category: cleanText(line.category),
+    pack_size: cleanText(line.packSize),
+    quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
+    unit_cost: Number(line.unitCost || 0),
+    vat_rate: Number(line.vatRate ?? (ZERO_RATE_VAT_ITEM_IDS.has(cleanText(line.id)) ? 0 : 0.2)),
+    sort_order: index
+  }));
+
+  if (lineRows.length) {
+    await supabaseRequest("order_lines", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(lineRows)
+    });
+  }
+}
+
+async function markOrderTableDeleted(orderId, status, deletedAt = new Date().toISOString()) {
+  await supabaseRequest(`orders?id=eq.${encodeURIComponent(orderId)}&status=eq.${encodeURIComponent(status)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ deleted_at: deletedAt, updated_at: deletedAt })
+  });
+}
+
+function orderFromOrderTableRow(row) {
+  return {
+    id: row.id,
+    orderNumber: row.order_number,
+    neededBy: row.needed_by || "",
+    note: row.notes || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lineItems: row.lineItems || [],
+    sourceOrderId: row.source_order_id || "",
+    sourceOrderNumber: row.source_order_number || "",
+    pdfPath: `/supplier-order/${encodeURIComponent(row.id)}.pdf`,
+    pricedPdfPath: `/api/orders/${encodeURIComponent(row.id)}/priced-pdf`,
+    pdfFileName: row.supplier_pdf_name || `${row.order_number}-${String(row.created_at || "").slice(0, 10)}.pdf`
+  };
+}
+
+function draftFromOrderTableRow(row) {
+  return {
+    id: row.id,
+    draftNumber: row.order_number,
+    sourceOrderId: row.source_order_id || "",
+    sourceOrderNumber: row.source_order_number || "",
+    neededBy: row.needed_by || "",
+    note: row.notes || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lineItems: row.lineItems || []
+  };
+}
+
+async function readLegacyCloudOrders() {
   const rows = await supabaseRequest("stock_orders?select=*&status=eq.submitted&deleted_at=is.null&order=created_at.desc");
   return rows.map(orderFromSupabaseRow);
 }
 
-async function readCloudDrafts() {
+async function readLegacyCloudDrafts() {
   const rows = await supabaseRequest("stock_orders?select=*&status=eq.draft&deleted_at=is.null&order=updated_at.desc");
   return rows.map(draftFromSupabaseRow);
 }
 
-async function writeCloudOrder(order, baseName = orderBaseName(order)) {
+async function writeLegacyCloudOrder(order, baseName = orderBaseName(order)) {
   const row = {
     id: order.id,
     order_number: order.orderNumber,
@@ -997,7 +1352,7 @@ async function writeCloudOrder(order, baseName = orderBaseName(order)) {
   });
 }
 
-async function writeCloudDraft(draft) {
+async function writeLegacyCloudDraft(draft) {
   const row = {
     id: draft.id,
     order_number: draft.draftNumber,
@@ -1022,13 +1377,13 @@ async function writeCloudDraft(draft) {
   });
 }
 
-async function findCloudDraft(draftId) {
+async function findLegacyCloudDraft(draftId) {
   const rows = await supabaseRequest(`stock_orders?select=*&id=eq.${encodeURIComponent(draftId)}&status=eq.draft&deleted_at=is.null&limit=1`);
   return rows[0] ? draftFromSupabaseRow(rows[0]) : null;
 }
 
-async function deleteCloudDraft(draftId) {
-  const draft = await findCloudDraft(draftId);
+async function deleteLegacyCloudDraft(draftId) {
+  const draft = await findLegacyCloudDraft(draftId);
   if (!draft) {
     const error = new Error("Draft order not found.");
     error.statusCode = 404;
@@ -1044,7 +1399,7 @@ async function deleteCloudDraft(draftId) {
   return { deleted: true, draftId };
 }
 
-async function findCloudSavedOrder(orderId) {
+async function findLegacyCloudSavedOrder(orderId) {
   const rows = await supabaseRequest(`stock_orders?select=*&id=eq.${encodeURIComponent(orderId)}&status=eq.submitted&deleted_at=is.null&limit=1`);
   if (!rows[0]) return null;
 
@@ -1053,8 +1408,8 @@ async function findCloudSavedOrder(orderId) {
   return { order, baseName, pdfFileName: order.pdfFileName };
 }
 
-async function deleteCloudOrder(orderId) {
-  const savedOrder = await findCloudSavedOrder(orderId);
+async function deleteLegacyCloudOrder(orderId) {
+  const savedOrder = await findLegacyCloudSavedOrder(orderId);
   if (!savedOrder) {
     const error = new Error("Order not found.");
     error.statusCode = 404;
@@ -1071,7 +1426,7 @@ async function deleteCloudOrder(orderId) {
   return { deleted: true, orderId, deletedDrafts };
 }
 
-async function deleteCloudDraftsForOrder(orderId, deletedAt = new Date().toISOString()) {
+async function deleteLegacyCloudDraftsForOrder(orderId, deletedAt = new Date().toISOString()) {
   const rows = await supabaseRequest(`stock_orders?select=id,totals&status=eq.draft&deleted_at=is.null`);
   const matchingIds = rows
     .filter((row) => row.id === `backup-${orderId}` || row.totals?.sourceOrderId === orderId)
