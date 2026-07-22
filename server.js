@@ -78,6 +78,13 @@ const ZERO_RATE_VAT_ITEM_IDS = new Set([
 const CATALOG_ROW_ID = "stock-catalogue-v1";
 
 const SQUARE_CATALOGUE_PATCHES = [
+  { id: "square-breezer-crisp-watermelon", name: "Breezer crisp watermelon", category: "Bottles", unitCost: 11.52, packSize: "12 bottles per case" },
+  { id: "square-breezer-zesty-orange", name: "Breezer zesty Orange", category: "Bottles", unitCost: 11.52, packSize: "12 bottles per case" },
+  { id: "square-breezer-zingy-lime", name: "Breezer zingy Lime", category: "Bottles", unitCost: 11.52, packSize: "12 bottles per case" },
+  { id: "baby-buzzballz-berry-cherry-limeade", name: "BuzzBallz Berry Cherry Limeade", category: "Bottles", unitCost: 63.99, packSize: "24 x 200ml" },
+  { id: "baby-buzzballz-lime-rita", name: "BuzzBallz Lime 'Rita", category: "Bottles", unitCost: 31.99, packSize: "12 x 200ml" },
+  { id: "baby-buzzballz-passionfruit-martini", name: "BuzzBallz Passionfruit Martini", category: "Bottles", unitCost: 31.99, packSize: "12 x 200ml" },
+  { id: "baby-buzzballz-strawberry-rita", name: "BuzzBallz Strawberry 'Rita", category: "Bottles", unitCost: 31.99, packSize: "12 x 200ml" },
   { id: "baby-bulmers-500", name: "Bulmers 500ml", category: "Bottles", unitCost: 1.29 },
   { id: "baby-bulmers-red-berry", name: "Bulmers No17 Crushed Red Berry/Lime 500ml", category: "Bottles", unitCost: 1.19 },
   { id: "square-kopparberg-mango", name: "Kopparberg  Mango", category: "Bottles", unitCost: 1.53 },
@@ -226,6 +233,10 @@ const defaultStockItems = [
   stock("baby-doombar-500", "Doom Bar 500ml", "Bottles", "Baby Bottles", "8 pack", 13.58, 1),
   stock("baby-heineken-zero", "Heineken 0.0 330ml", "Bottles", "Baby Bottles", "2 dozen", 19.25, 1),
   stock("baby-guinness-zero", "Guinness 0.0% Pint Cans 538ml", "Bottles", "Baby Bottles", "2 dozen", 38, 1),
+  stock("baby-buzzballz-berry-cherry-limeade", "BuzzBallz Berry Cherry Limeade", "Bottles", "Baby Bottles", "24 x 200ml", 63.99, 1),
+  stock("baby-buzzballz-lime-rita", "BuzzBallz Lime 'Rita", "Bottles", "Baby Bottles", "12 x 200ml", 31.99, 1),
+  stock("baby-buzzballz-passionfruit-martini", "BuzzBallz Passionfruit Martini", "Bottles", "Baby Bottles", "12 x 200ml", 31.99, 1),
+  stock("baby-buzzballz-strawberry-rita", "BuzzBallz Strawberry 'Rita", "Bottles", "Baby Bottles", "12 x 200ml", 31.99, 1),
 
   stock("baby-coke-can", "Coca Cola Can", "Soft Drinks", "Baby Bottles", "2 dozen", 10.99, 4),
   stock("baby-coke-zero-can", "Coke Zero Can", "Soft Drinks", "Baby Bottles", "2 dozen", 9.99, 3),
@@ -518,6 +529,33 @@ function reconcileStockCatalogue() {
     changed = true;
   }
 
+  if (applySharedStockPatches(items)) {
+    changed = true;
+  }
+
+  if (changed) writeStockItems(items);
+}
+
+function isAuthorised(request) {
+  const password = process.env.ORDER_APP_PASSWORD;
+  if (!password) return true;
+
+  const header = request.headers.authorization || "";
+  if (!header.startsWith("Basic ")) return false;
+
+  const decoded = Buffer.from(header.slice(6), "base64").toString("utf8");
+  const [, suppliedPassword = ""] = decoded.split(":");
+  return suppliedPassword === password;
+}
+
+function hasSupabase() {
+  return Boolean(SUPABASE_URL && SUPABASE_SECRET_KEY);
+}
+
+
+function applySharedStockPatches(items) {
+  let changed = false;
+
   for (const patch of SQUARE_CATALOGUE_PATCHES) {
     const item = items.find((entry) => entry.id === patch.id || entry.name === patch.name);
     if (item) {
@@ -543,23 +581,7 @@ function reconcileStockCatalogue() {
     }
   }
 
-  if (changed) writeStockItems(items);
-}
-
-function isAuthorised(request) {
-  const password = process.env.ORDER_APP_PASSWORD;
-  if (!password) return true;
-
-  const header = request.headers.authorization || "";
-  if (!header.startsWith("Basic ")) return false;
-
-  const decoded = Buffer.from(header.slice(6), "base64").toString("utf8");
-  const [, suppliedPassword = ""] = decoded.split(":");
-  return suppliedPassword === password;
-}
-
-function hasSupabase() {
-  return Boolean(SUPABASE_URL && SUPABASE_SECRET_KEY);
+  return changed;
 }
 
 function normaliseStockItems(items) {
@@ -600,7 +622,11 @@ async function readCloudStockItems() {
   const cloudItems = rows?.[0]?.items;
 
   if (Array.isArray(cloudItems) && cloudItems.length >= MINIMUM_STOCK_ITEMS) {
-    return normaliseStockItems(cloudItems);
+    const normalisedItems = normaliseStockItems(cloudItems);
+    if (applySharedStockPatches(normalisedItems)) {
+      await writeCloudStockItems(normalisedItems);
+    }
+    return normalisedItems;
   }
 
   const seededItems = normaliseStockItems(readStockItems());
@@ -1755,7 +1781,10 @@ function readJson(request) {
 }
 
 function sendJson(response, status, data) {
-  response.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+  response.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store"
+  });
   response.end(JSON.stringify(data));
 }
 

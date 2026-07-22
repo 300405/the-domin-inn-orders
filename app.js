@@ -112,15 +112,18 @@ function bindEvents() {
   els.settingsDeleteItem.addEventListener("click", deleteSettingsItem);
 }
 
-async function loadCatalog() {
+async function loadCatalog(preferredItemId = null) {
   try {
-    const response = await fetch("/api/catalog");
+    const response = await fetch(`/api/catalog?fresh=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error("Stock catalogue unavailable");
 
     const data = await response.json();
     state.catalog = data.items || [];
     state.categories = buildOptions(state.catalog, "category");
-    if (!state.categories.some((category) => category.id === state.activeCategory)) {
+    const preferredItem = preferredItemId ? state.catalog.find((item) => item.id === preferredItemId) : null;
+    if (preferredItem) {
+      state.activeCategory = preferredItem.category;
+    } else if (!state.categories.some((category) => category.id === state.activeCategory)) {
       state.activeCategory = state.categories[0]?.id || null;
     }
     els.catalogStatus.textContent = `${state.catalog.length} stock lines ready to order.`;
@@ -464,10 +467,12 @@ async function addSettingsItem(event) {
     els.settingsAddName.value = "";
     els.settingsAddPack.value = "";
     els.settingsAddPrice.value = "";
-    await loadCatalog();
+    await loadCatalog(data.item.id);
     render();
     renderSettings();
-    setSettingsMessage(`${data.item.name} added.`, "success");
+    els.settingsEditItem.value = data.item.id;
+    fillSettingsItem();
+    setSettingsMessage(`${data.item.name} saved to the shared stock list.`, "success");
   } catch (error) {
     setSettingsMessage(error.message, "error");
   }
@@ -496,12 +501,12 @@ async function saveSettingsItem(event) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Could not save item.");
 
-    await loadCatalog();
+    await loadCatalog(data.item.id);
     render();
     renderSettings();
     els.settingsEditItem.value = data.item.id;
     fillSettingsItem();
-    setSettingsMessage(`${data.item.name} saved.`, "success");
+    setSettingsMessage(`${data.item.name} saved to the shared stock list.`, "success");
   } catch (error) {
     setSettingsMessage(error.message, "error");
   }

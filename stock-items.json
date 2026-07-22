@@ -5,12 +5,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "12 bottles per case",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.96
+    "unitCost": 11.52
   },
   {
     "id": "square-breezer-zesty-orange",
@@ -18,12 +18,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "12 bottles per case",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.96
+    "unitCost": 11.52
   },
   {
     "id": "square-breezer-zingy-lime",
@@ -31,12 +31,12 @@
     "sku": "",
     "category": "Bottles",
     "supplier": "",
-    "packSize": "Regular",
+    "packSize": "12 bottles per case",
     "onHand": 0,
     "reorderPoint": 1,
     "reorderQuantity": 1,
     "parLevel": 2,
-    "unitCost": 0.96
+    "unitCost": 11.52
   },
   {
     "id": "square-budwiser",
@@ -1769,7 +1769,7 @@
   },
   {
     "id": "square-bacardi-caribbean-spiced",
-    "name": "Bacardí Caribbean Spiced",
+    "name": "Bacardi\u0301 Caribbean Spiced",
     "sku": "",
     "category": "Spirits",
     "supplier": "",
@@ -2936,5 +2936,57 @@
     "reorderQuantity": 1,
     "parLevel": 2,
     "unitCost": 1.43
+  },
+  {
+    "id": "baby-buzzballz-berry-cherry-limeade",
+    "name": "BuzzBallz Berry Cherry Limeade",
+    "sku": "BABY-BUZZBALLZ-BERRY-CHE",
+    "category": "Bottles",
+    "supplier": "Baby Bottles",
+    "packSize": "24 x 200ml",
+    "onHand": 0,
+    "reorderPoint": 1,
+    "reorderQuantity": 1,
+    "parLevel": 2,
+    "unitCost": 63.99
+  },
+  {
+    "id": "baby-buzzballz-lime-rita",
+    "name": "BuzzBallz Lime 'Rita",
+    "sku": "BABY-BUZZBALLZ-LIME-RITA",
+    "category": "Bottles",
+    "supplier": "Baby Bottles",
+    "packSize": "12 x 200ml",
+    "onHand": 0,
+    "reorderPoint": 1,
+    "reorderQuantity": 1,
+    "parLevel": 2,
+    "unitCost": 31.99
+  },
+  {
+    "id": "baby-buzzballz-passionfruit-martini",
+    "name": "BuzzBallz Passionfruit Martini",
+    "sku": "BABY-BUZZBALLZ-PASSIONFR",
+    "category": "Bottles",
+    "supplier": "Baby Bottles",
+    "packSize": "12 x 200ml",
+    "onHand": 0,
+    "reorderPoint": 1,
+    "reorderQuantity": 1,
+    "parLevel": 2,
+    "unitCost": 31.99
+  },
+  {
+    "id": "baby-buzzballz-strawberry-rita",
+    "name": "BuzzBallz Strawberry 'Rita",
+    "sku": "BABY-BUZZBALLZ-STRAWBERR",
+    "category": "Bottles",
+    "supplier": "Baby Bottles",
+    "packSize": "12 x 200ml",
+    "onHand": 0,
+    "reorderPoint": 1,
+    "reorderQuantity": 1,
+    "parLevel": 2,
+    "unitCost": 31.99
   }
 ]
