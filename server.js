@@ -75,8 +75,16 @@ const REMOVED_DUPLICATE_STOCK_IDS = new Set([
 const ZERO_RATE_VAT_ITEM_IDS = new Set([
   "snack-pork-scratchings"
 ]);
+const CATALOG_ROW_ID = "stock-catalogue-v1";
 
 const SQUARE_CATALOGUE_PATCHES = [
+  { id: "square-breezer-crisp-watermelon", name: "Breezer crisp watermelon", category: "Bottles", unitCost: 11.52, packSize: "12 bottles per case" },
+  { id: "square-breezer-zesty-orange", name: "Breezer zesty Orange", category: "Bottles", unitCost: 11.52, packSize: "12 bottles per case" },
+  { id: "square-breezer-zingy-lime", name: "Breezer zingy Lime", category: "Bottles", unitCost: 11.52, packSize: "12 bottles per case" },
+  { id: "baby-buzzballz-berry-cherry-limeade", name: "BuzzBallz Berry Cherry Limeade", category: "Bottles", unitCost: 63.99, packSize: "24 x 200ml" },
+  { id: "baby-buzzballz-lime-rita", name: "BuzzBallz Lime 'Rita", category: "Bottles", unitCost: 31.99, packSize: "12 x 200ml" },
+  { id: "baby-buzzballz-passionfruit-martini", name: "BuzzBallz Passionfruit Martini", category: "Bottles", unitCost: 31.99, packSize: "12 x 200ml" },
+  { id: "baby-buzzballz-strawberry-rita", name: "BuzzBallz Strawberry 'Rita", category: "Bottles", unitCost: 31.99, packSize: "12 x 200ml" },
   { id: "baby-bulmers-500", name: "Bulmers 500ml", category: "Bottles", unitCost: 1.29 },
   { id: "baby-bulmers-red-berry", name: "Bulmers No17 Crushed Red Berry/Lime 500ml", category: "Bottles", unitCost: 1.19 },
   { id: "square-kopparberg-mango", name: "Kopparberg  Mango", category: "Bottles", unitCost: 1.53 },
@@ -225,6 +233,10 @@ const defaultStockItems = [
   stock("baby-doombar-500", "Doom Bar 500ml", "Bottles", "Baby Bottles", "8 pack", 13.58, 1),
   stock("baby-heineken-zero", "Heineken 0.0 330ml", "Bottles", "Baby Bottles", "2 dozen", 19.25, 1),
   stock("baby-guinness-zero", "Guinness 0.0% Pint Cans 538ml", "Bottles", "Baby Bottles", "2 dozen", 38, 1),
+  stock("baby-buzzballz-berry-cherry-limeade", "BuzzBallz Berry Cherry Limeade", "Bottles", "Baby Bottles", "24 x 200ml", 63.99, 1),
+  stock("baby-buzzballz-lime-rita", "BuzzBallz Lime 'Rita", "Bottles", "Baby Bottles", "12 x 200ml", 31.99, 1),
+  stock("baby-buzzballz-passionfruit-martini", "BuzzBallz Passionfruit Martini", "Bottles", "Baby Bottles", "12 x 200ml", 31.99, 1),
+  stock("baby-buzzballz-strawberry-rita", "BuzzBallz Strawberry 'Rita", "Bottles", "Baby Bottles", "12 x 200ml", 31.99, 1),
 
   stock("baby-coke-can", "Coca Cola Can", "Soft Drinks", "Baby Bottles", "2 dozen", 10.99, 4),
   stock("baby-coke-zero-can", "Coke Zero Can", "Soft Drinks", "Baby Bottles", "2 dozen", 9.99, 3),
@@ -351,7 +363,7 @@ function createStockItem(payload) {
     sku: id.toUpperCase().slice(0, 24),
     category,
     supplier: "",
-    packSize: "Regular",
+    packSize: cleanText(payload.packSize) || "Regular",
     onHand: 0,
     reorderPoint: 1,
     reorderQuantity: 1,
@@ -384,6 +396,9 @@ function updateStockItem(itemId, payload) {
 
   item.name = name;
   if (category) item.category = category;
+  if (Object.prototype.hasOwnProperty.call(payload, "packSize")) {
+    item.packSize = cleanText(payload.packSize) || "Regular";
+  }
   if (Object.prototype.hasOwnProperty.call(payload, "unitCost")) {
     item.unitCost = parseMoney(payload.unitCost);
   }
@@ -514,6 +529,33 @@ function reconcileStockCatalogue() {
     changed = true;
   }
 
+  if (applySharedStockPatches(items)) {
+    changed = true;
+  }
+
+  if (changed) writeStockItems(items);
+}
+
+function isAuthorised(request) {
+  const password = process.env.ORDER_APP_PASSWORD;
+  if (!password) return true;
+
+  const header = request.headers.authorization || "";
+  if (!header.startsWith("Basic ")) return false;
+
+  const decoded = Buffer.from(header.slice(6), "base64").toString("utf8");
+  const [, suppliedPassword = ""] = decoded.split(":");
+  return suppliedPassword === password;
+}
+
+function hasSupabase() {
+  return Boolean(SUPABASE_URL && SUPABASE_SECRET_KEY);
+}
+
+
+function applySharedStockPatches(items) {
+  let changed = false;
+
   for (const patch of SQUARE_CATALOGUE_PATCHES) {
     const item = items.find((entry) => entry.id === patch.id || entry.name === patch.name);
     if (item) {
@@ -539,23 +581,264 @@ function reconcileStockCatalogue() {
     }
   }
 
-  if (changed) writeStockItems(items);
+  return changed;
 }
 
-function isAuthorised(request) {
-  const password = process.env.ORDER_APP_PASSWORD;
-  if (!password) return true;
-
-  const header = request.headers.authorization || "";
-  if (!header.startsWith("Basic ")) return false;
-
-  const decoded = Buffer.from(header.slice(6), "base64").toString("utf8");
-  const [, suppliedPassword = ""] = decoded.split(":");
-  return suppliedPassword === password;
+function normaliseStockItems(items) {
+  return (Array.isArray(items) ? items : [])
+    .filter((item) => item && cleanText(item.name))
+    .map((item) => ({
+      id: cleanText(item.id) || slugify(item.name),
+      name: cleanText(item.name),
+      sku: cleanText(item.sku),
+      category: cleanText(item.category) || "Bottles",
+      supplier: cleanText(item.supplier),
+      packSize: cleanText(item.packSize) || "Regular",
+      onHand: Math.max(0, Math.floor(Number(item.onHand || 0))),
+      reorderPoint: Math.max(1, Math.floor(Number(item.reorderPoint || 1))),
+      reorderQuantity: Math.max(1, Math.floor(Number(item.reorderQuantity || 1))),
+      parLevel: Math.max(1, Math.floor(Number(item.parLevel || 2))),
+      unitCost: parseMoney(item.unitCost)
+    }))
+    .sort((a, b) => {
+      const categorySort = a.category.localeCompare(b.category);
+      return categorySort || a.name.localeCompare(b.name);
+    });
 }
 
-function hasSupabase() {
-  return Boolean(SUPABASE_URL && SUPABASE_SECRET_KEY);
+function isMissingSupabaseTableError(error) {
+  return /relation .* does not exist|schema cache|could not find the table|does not exist/i.test(error?.message || "");
+}
+
+function stockItemFromSupabaseRow(row) {
+  return {
+    id: cleanText(row.id),
+    name: cleanText(row.name),
+    sku: cleanText(row.sku),
+    category: cleanText(row.category) || "Bottles",
+    supplier: cleanText(row.supplier),
+    packSize: cleanText(row.pack_size) || "Regular",
+    onHand: Math.max(0, Math.floor(Number(row.on_hand || 0))),
+    reorderPoint: Math.max(1, Math.floor(Number(row.reorder_point || 1))),
+    reorderQuantity: Math.max(1, Math.floor(Number(row.reorder_quantity || 1))),
+    parLevel: Math.max(1, Math.floor(Number(row.par_level || 2))),
+    unitCost: parseMoney(row.unit_cost)
+  };
+}
+
+function stockItemToSupabaseRow(item) {
+  return {
+    id: item.id,
+    name: item.name,
+    sku: item.sku || "",
+    category: item.category || "Bottles",
+    supplier: item.supplier || "",
+    pack_size: item.packSize || "Regular",
+    on_hand: Math.max(0, Math.floor(Number(item.onHand || 0))),
+    reorder_point: Math.max(1, Math.floor(Number(item.reorderPoint || 1))),
+    reorder_quantity: Math.max(1, Math.floor(Number(item.reorderQuantity || 1))),
+    par_level: Math.max(1, Math.floor(Number(item.parLevel || 2))),
+    unit_cost: parseMoney(item.unitCost),
+    hidden: false
+  };
+}
+
+async function readCatalogItems() {
+  if (!hasSupabase()) return readStockItems();
+
+  try {
+    return await readCloudStockItems();
+  } catch (error) {
+    console.warn(`Using local stock catalogue: ${error.message}`);
+    return readStockItems();
+  }
+}
+
+async function readCloudStockItems() {
+  try {
+    return await readStockItemsTable();
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await readLegacyCloudStockItems();
+  }
+}
+
+async function readStockItemsTable() {
+  const rows = await supabaseRequest("stock_items?select=*&hidden=is.false&order=category.asc,name.asc");
+  let items = normaliseStockItems(rows.map(stockItemFromSupabaseRow));
+
+  if (items.length < MINIMUM_STOCK_ITEMS) {
+    items = normaliseStockItems(readStockItems());
+    await writeStockItemsTable(items);
+    return items;
+  }
+
+  if (applySharedStockPatches(items)) {
+    await writeStockItemsTable(items);
+  }
+
+  return items;
+}
+
+async function readLegacyCloudStockItems() {
+  const rows = await supabaseRequest(`stock_orders?select=items&id=eq.${encodeURIComponent(CATALOG_ROW_ID)}&limit=1`);
+  const cloudItems = rows?.[0]?.items;
+
+  if (Array.isArray(cloudItems) && cloudItems.length >= MINIMUM_STOCK_ITEMS) {
+    const normalisedItems = normaliseStockItems(cloudItems);
+    if (applySharedStockPatches(normalisedItems)) {
+      await writeCloudStockItems(normalisedItems);
+    }
+    return normalisedItems;
+  }
+
+  const seededItems = normaliseStockItems(readStockItems());
+  await writeCloudStockItems(seededItems);
+  return seededItems;
+}
+
+async function writeCloudStockItems(items) {
+  try {
+    await writeStockItemsTable(items);
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    await writeLegacyCloudStockItems(items);
+  }
+}
+
+async function writeStockItemsTable(items) {
+  const rows = normaliseStockItems(items).map(stockItemToSupabaseRow);
+  await supabaseRequest("stock_items", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify(rows)
+  });
+}
+
+async function writeLegacyCloudStockItems(items) {
+  const now = new Date().toISOString();
+  await supabaseRequest("stock_orders", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({
+      id: CATALOG_ROW_ID,
+      order_number: "CATALOGUE",
+      status: "catalogue",
+      needed_by: null,
+      notes: "Shared stock catalogue",
+      items: normaliseStockItems(items),
+      totals: { kind: "stock_catalogue", itemCount: items.length },
+      deleted_at: null,
+      created_at: now,
+      updated_at: now
+    })
+  });
+}
+
+async function createCatalogItem(payload) {
+  if (!hasSupabase()) return createStockItem(payload);
+
+  const name = cleanText(payload.name);
+  const category = cleanText(payload.category) || "Bottles";
+  if (!name) {
+    const error = new Error("Item name is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const items = await readCatalogItems();
+  const baseId = slugify(name);
+  let id = baseId;
+  let suffix = 2;
+  while (items.some((item) => item.id === id)) {
+    id = `${baseId}-${suffix}`;
+    suffix += 1;
+  }
+
+  const item = {
+    id,
+    name,
+    sku: id.toUpperCase().slice(0, 24),
+    category,
+    supplier: "",
+    packSize: cleanText(payload.packSize) || "Regular",
+    onHand: 0,
+    reorderPoint: 1,
+    reorderQuantity: 1,
+    parLevel: 2,
+    unitCost: parseMoney(payload.unitCost)
+  };
+
+  items.push(item);
+  await writeCloudStockItems(items);
+  return { item };
+}
+
+async function updateCatalogItem(itemId, payload) {
+  if (!hasSupabase()) return updateStockItem(itemId, payload);
+
+  const name = cleanText(payload.name);
+  const category = cleanText(payload.category);
+  const items = await readCatalogItems();
+  const item = items.find((entry) => entry.id === itemId);
+
+  if (!item) {
+    const error = new Error("Stock item not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!name) {
+    const error = new Error("Item name is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  item.name = name;
+  if (category) item.category = category;
+  if (Object.prototype.hasOwnProperty.call(payload, "packSize")) {
+    item.packSize = cleanText(payload.packSize) || "Regular";
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "unitCost")) {
+    item.unitCost = parseMoney(payload.unitCost);
+  }
+
+  await writeCloudStockItems(items);
+  return { item };
+}
+
+async function deleteCatalogItem(itemId) {
+  if (!hasSupabase()) return deleteStockItem(itemId);
+
+  try {
+    const rows = await supabaseRequest(`stock_items?id=eq.${encodeURIComponent(itemId)}&hidden=is.false&select=id&limit=1`);
+    if (!rows.length) {
+      const error = new Error("Stock item not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await supabaseRequest(`stock_items?id=eq.${encodeURIComponent(itemId)}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ hidden: true })
+    });
+    return { deleted: true, itemId };
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+  }
+
+  const items = await readCatalogItems();
+  const nextItems = items.filter((item) => item.id !== itemId);
+
+  if (nextItems.length === items.length) {
+    const error = new Error("Stock item not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await writeCloudStockItems(nextItems);
+  return { deleted: true, itemId };
 }
 
 async function supabaseRequest(pathname, options = {}) {
@@ -611,19 +894,19 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET" && url.pathname === "/api/catalog") {
-      return sendJson(response, 200, { items: readStockItems() });
+      return sendJson(response, 200, { items: await readCatalogItems() });
     }
 
     if (request.method === "POST" && url.pathname === "/api/catalog") {
-      return sendJson(response, 201, createStockItem(await readJson(request)));
+      return sendJson(response, 201, await createCatalogItem(await readJson(request)));
     }
 
     if (request.method === "PATCH" && url.pathname.startsWith("/api/catalog/")) {
-      return sendJson(response, 200, updateStockItem(decodeURIComponent(url.pathname.replace("/api/catalog/", "")), await readJson(request)));
+      return sendJson(response, 200, await updateCatalogItem(decodeURIComponent(url.pathname.replace("/api/catalog/", "")), await readJson(request)));
     }
 
     if (request.method === "DELETE" && url.pathname.startsWith("/api/catalog/")) {
-      return sendJson(response, 200, deleteStockItem(decodeURIComponent(url.pathname.replace("/api/catalog/", ""))));
+      return sendJson(response, 200, await deleteCatalogItem(decodeURIComponent(url.pathname.replace("/api/catalog/", ""))));
     }
 
     if (request.method === "GET" && url.pathname === "/api/orders") {
@@ -780,16 +1063,272 @@ function draftFromSupabaseRow(row) {
 }
 
 async function readCloudOrders() {
+  try {
+    return await readOrderTableRows("submitted");
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await readLegacyCloudOrders();
+  }
+}
+
+async function readCloudDrafts() {
+  try {
+    return await readOrderTableRows("draft");
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await readLegacyCloudDrafts();
+  }
+}
+
+async function writeCloudOrder(order, baseName = orderBaseName(order)) {
+  try {
+    await writeOrderTableRow({
+      ...order,
+      status: "submitted",
+      orderNumber: order.orderNumber,
+      sourceOrderId: "",
+      sourceOrderNumber: "",
+      supplierPdfName: `${baseName}.pdf`,
+      pricedPdfName: `${baseName}-priced.pdf`,
+      submittedAt: order.createdAt
+    });
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    await writeLegacyCloudOrder(order, baseName);
+  }
+}
+
+async function writeCloudDraft(draft) {
+  try {
+    await writeOrderTableRow({
+      ...draft,
+      status: "draft",
+      orderNumber: draft.draftNumber,
+      supplierPdfName: "",
+      pricedPdfName: "",
+      submittedAt: null
+    });
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    await writeLegacyCloudDraft(draft);
+  }
+}
+
+async function findCloudDraft(draftId) {
+  try {
+    const draft = await findOrderTableRow(draftId, "draft");
+    return draft ? draftFromOrderTableRow(draft) : null;
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await findLegacyCloudDraft(draftId);
+  }
+}
+
+async function deleteCloudDraft(draftId) {
+  try {
+    const draft = await findCloudDraft(draftId);
+    if (!draft) {
+      const error = new Error("Draft order not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await markOrderTableDeleted(draftId, "draft");
+    return { deleted: true, draftId };
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await deleteLegacyCloudDraft(draftId);
+  }
+}
+
+async function findCloudSavedOrder(orderId) {
+  try {
+    const row = await findOrderTableRow(orderId, "submitted");
+    if (!row) return null;
+
+    const order = orderFromOrderTableRow(row);
+    const baseName = order.pdfFileName.replace(/\.pdf$/, "");
+    return { order, baseName, pdfFileName: order.pdfFileName };
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await findLegacyCloudSavedOrder(orderId);
+  }
+}
+
+async function deleteCloudOrder(orderId) {
+  try {
+    const savedOrder = await findCloudSavedOrder(orderId);
+    if (!savedOrder) {
+      const error = new Error("Order not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const deletedAt = new Date().toISOString();
+    await markOrderTableDeleted(orderId, "submitted", deletedAt);
+    const deletedDrafts = await deleteCloudDraftsForOrder(orderId, deletedAt);
+    return { deleted: true, orderId, deletedDrafts };
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await deleteLegacyCloudOrder(orderId);
+  }
+}
+
+async function deleteCloudDraftsForOrder(orderId, deletedAt = new Date().toISOString()) {
+  try {
+    const rows = await supabaseRequest(`orders?select=id&status=eq.draft&deleted_at=is.null&or=(id.eq.backup-${encodeURIComponent(orderId)},source_order_id.eq.${encodeURIComponent(orderId)})`);
+    const matchingIds = rows.map((row) => row.id);
+    for (const draftId of matchingIds) {
+      await markOrderTableDeleted(draftId, "draft", deletedAt);
+    }
+    return matchingIds;
+  } catch (error) {
+    if (!isMissingSupabaseTableError(error)) throw error;
+    return await deleteLegacyCloudDraftsForOrder(orderId, deletedAt);
+  }
+}
+
+async function readOrderTableRows(status) {
+  const orderColumn = status === "submitted" ? "created_at.desc" : "updated_at.desc";
+  const rows = await supabaseRequest(`orders?select=*&status=eq.${encodeURIComponent(status)}&deleted_at=is.null&order=${orderColumn}`);
+  const withLines = [];
+  for (const row of rows) {
+    withLines.push({
+      ...row,
+      lineItems: await readOrderTableLines(row.id)
+    });
+  }
+  return status === "submitted" ? withLines.map(orderFromOrderTableRow) : withLines.map(draftFromOrderTableRow);
+}
+
+async function findOrderTableRow(orderId, status) {
+  const rows = await supabaseRequest(`orders?select=*&id=eq.${encodeURIComponent(orderId)}&status=eq.${encodeURIComponent(status)}&deleted_at=is.null&limit=1`);
+  if (!rows[0]) return null;
+  return {
+    ...rows[0],
+    lineItems: await readOrderTableLines(rows[0].id)
+  };
+}
+
+async function readOrderTableLines(orderId) {
+  const rows = await supabaseRequest(`order_lines?select=*&order_id=eq.${encodeURIComponent(orderId)}&order=sort_order.asc`);
+  return rows.map((row) => ({
+    id: cleanText(row.stock_item_id),
+    name: cleanText(row.name),
+    sku: cleanText(row.sku),
+    supplier: cleanText(row.supplier),
+    category: cleanText(row.category),
+    packSize: cleanText(row.pack_size),
+    quantity: Math.max(1, Math.floor(Number(row.quantity || 1))),
+    unitCost: Number(row.unit_cost || 0),
+    vatRate: Number(row.vat_rate ?? 0.2)
+  }));
+}
+
+async function writeOrderTableRow(entry) {
+  const now = new Date().toISOString();
+  const createdAt = entry.createdAt || now;
+  await supabaseRequest("orders", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({
+      id: entry.id,
+      order_number: entry.orderNumber,
+      status: entry.status,
+      needed_by: entry.neededBy || null,
+      notes: entry.note || "",
+      source_order_id: entry.sourceOrderId || null,
+      source_order_number: entry.sourceOrderNumber || null,
+      supplier_pdf_name: entry.supplierPdfName || null,
+      priced_pdf_name: entry.pricedPdfName || null,
+      subtotal: calculateOrderTotals(entry.lineItems).net,
+      vat_total: calculateOrderTotals(entry.lineItems).vat,
+      grand_total: calculateOrderTotals(entry.lineItems).gross,
+      submitted_at: entry.submittedAt || null,
+      deleted_at: null,
+      created_at: createdAt,
+      updated_at: entry.updatedAt || createdAt
+    })
+  });
+
+  await supabaseRequest(`order_lines?order_id=eq.${encodeURIComponent(entry.id)}`, {
+    method: "DELETE",
+    headers: { Prefer: "return=minimal" }
+  });
+
+  const lineRows = (entry.lineItems || []).map((line, index) => ({
+    order_id: entry.id,
+    stock_item_id: cleanText(line.id),
+    name: cleanText(line.name),
+    sku: cleanText(line.sku),
+    supplier: cleanText(line.supplier),
+    category: cleanText(line.category),
+    pack_size: cleanText(line.packSize),
+    quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
+    unit_cost: Number(line.unitCost || 0),
+    vat_rate: Number(line.vatRate ?? (ZERO_RATE_VAT_ITEM_IDS.has(cleanText(line.id)) ? 0 : 0.2)),
+    sort_order: index
+  }));
+
+  if (lineRows.length) {
+    await supabaseRequest("order_lines", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(lineRows)
+    });
+  }
+}
+
+async function markOrderTableDeleted(orderId, status, deletedAt = new Date().toISOString()) {
+  await supabaseRequest(`orders?id=eq.${encodeURIComponent(orderId)}&status=eq.${encodeURIComponent(status)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ deleted_at: deletedAt, updated_at: deletedAt })
+  });
+}
+
+function orderFromOrderTableRow(row) {
+  return {
+    id: row.id,
+    orderNumber: row.order_number,
+    neededBy: row.needed_by || "",
+    note: row.notes || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lineItems: row.lineItems || [],
+    sourceOrderId: row.source_order_id || "",
+    sourceOrderNumber: row.source_order_number || "",
+    pdfPath: `/supplier-order/${encodeURIComponent(row.id)}.pdf`,
+    pricedPdfPath: `/api/orders/${encodeURIComponent(row.id)}/priced-pdf`,
+    pdfFileName: row.supplier_pdf_name || `${row.order_number}-${String(row.created_at || "").slice(0, 10)}.pdf`
+  };
+}
+
+function draftFromOrderTableRow(row) {
+  return {
+    id: row.id,
+    draftNumber: row.order_number,
+    sourceOrderId: row.source_order_id || "",
+    sourceOrderNumber: row.source_order_number || "",
+    neededBy: row.needed_by || "",
+    note: row.notes || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lineItems: row.lineItems || []
+  };
+}
+
+async function readLegacyCloudOrders() {
   const rows = await supabaseRequest("stock_orders?select=*&status=eq.submitted&deleted_at=is.null&order=created_at.desc");
   return rows.map(orderFromSupabaseRow);
 }
 
-async function readCloudDrafts() {
+async function readLegacyCloudDrafts() {
   const rows = await supabaseRequest("stock_orders?select=*&status=eq.draft&deleted_at=is.null&order=updated_at.desc");
   return rows.map(draftFromSupabaseRow);
 }
 
-async function writeCloudOrder(order, baseName = orderBaseName(order)) {
+async function writeLegacyCloudOrder(order, baseName = orderBaseName(order)) {
   const row = {
     id: order.id,
     order_number: order.orderNumber,
@@ -813,7 +1352,7 @@ async function writeCloudOrder(order, baseName = orderBaseName(order)) {
   });
 }
 
-async function writeCloudDraft(draft) {
+async function writeLegacyCloudDraft(draft) {
   const row = {
     id: draft.id,
     order_number: draft.draftNumber,
@@ -838,13 +1377,13 @@ async function writeCloudDraft(draft) {
   });
 }
 
-async function findCloudDraft(draftId) {
+async function findLegacyCloudDraft(draftId) {
   const rows = await supabaseRequest(`stock_orders?select=*&id=eq.${encodeURIComponent(draftId)}&status=eq.draft&deleted_at=is.null&limit=1`);
   return rows[0] ? draftFromSupabaseRow(rows[0]) : null;
 }
 
-async function deleteCloudDraft(draftId) {
-  const draft = await findCloudDraft(draftId);
+async function deleteLegacyCloudDraft(draftId) {
+  const draft = await findLegacyCloudDraft(draftId);
   if (!draft) {
     const error = new Error("Draft order not found.");
     error.statusCode = 404;
@@ -860,7 +1399,7 @@ async function deleteCloudDraft(draftId) {
   return { deleted: true, draftId };
 }
 
-async function findCloudSavedOrder(orderId) {
+async function findLegacyCloudSavedOrder(orderId) {
   const rows = await supabaseRequest(`stock_orders?select=*&id=eq.${encodeURIComponent(orderId)}&status=eq.submitted&deleted_at=is.null&limit=1`);
   if (!rows[0]) return null;
 
@@ -869,8 +1408,8 @@ async function findCloudSavedOrder(orderId) {
   return { order, baseName, pdfFileName: order.pdfFileName };
 }
 
-async function deleteCloudOrder(orderId) {
-  const savedOrder = await findCloudSavedOrder(orderId);
+async function deleteLegacyCloudOrder(orderId) {
+  const savedOrder = await findLegacyCloudSavedOrder(orderId);
   if (!savedOrder) {
     const error = new Error("Order not found.");
     error.statusCode = 404;
@@ -887,7 +1426,7 @@ async function deleteCloudOrder(orderId) {
   return { deleted: true, orderId, deletedDrafts };
 }
 
-async function deleteCloudDraftsForOrder(orderId, deletedAt = new Date().toISOString()) {
+async function deleteLegacyCloudDraftsForOrder(orderId, deletedAt = new Date().toISOString()) {
   const rows = await supabaseRequest(`stock_orders?select=id,totals&status=eq.draft&deleted_at=is.null`);
   const matchingIds = rows
     .filter((row) => row.id === `backup-${orderId}` || row.totals?.sourceOrderId === orderId)
@@ -1597,7 +2136,10 @@ function readJson(request) {
 }
 
 function sendJson(response, status, data) {
-  response.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+  response.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store"
+  });
   response.end(JSON.stringify(data));
 }
 
