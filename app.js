@@ -949,6 +949,8 @@ function openDraft(draftId) {
   renderCart();
   renderCatalog();
   renderDrafts();
+  closePreviousOrders();
+  openCartPreview();
   setMessage(`${draft.draftNumber} opened. Add more items, then save again.`, "success");
 }
 
