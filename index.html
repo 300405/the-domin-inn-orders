@@ -46,28 +46,29 @@
         </label>
       </form>
 
-      <section class="orders-folder">
-        <div class="folder-head">
-          <div>
-            <p class="eyeline">Orders folder</p>
-            <h2>Previous orders</h2>
-          </div>
-          <div class="folder-actions">
-            <button class="ghost-button" id="refreshOrders" type="button">Refresh</button>
-            <button class="folder-close-button" id="closeOrdersFolder" type="button" aria-label="Close previous orders" title="Close">×</button>
-          </div>
-        </div>
-        <div class="draft-section">
-          <div class="draft-head">
-            <strong>Saved for later</strong>
-            <small>Open on any device</small>
-          </div>
-          <div class="draft-history" id="draftHistory" aria-live="polite"></div>
-        </div>
-        <div class="order-history" id="orderHistory" aria-live="polite"></div>
-        <div class="order-preview" id="orderPreview"></div>
-      </section>
     </aside>
+
+    <section class="orders-folder">
+      <div class="folder-head">
+        <div>
+          <p class="eyeline">Orders folder</p>
+          <h2>Previous orders</h2>
+        </div>
+        <div class="folder-actions">
+          <button class="ghost-button" id="refreshOrders" type="button">Refresh</button>
+          <button class="folder-close-button" id="closeOrdersFolder" type="button" aria-label="Close previous orders" title="Close">×</button>
+        </div>
+      </div>
+      <div class="draft-section">
+        <div class="draft-head">
+          <strong>Saved for later</strong>
+          <small>Open on any device</small>
+        </div>
+        <div class="draft-history" id="draftHistory" aria-live="polite"></div>
+      </div>
+      <div class="order-history" id="orderHistory" aria-live="polite"></div>
+      <div class="order-preview" id="orderPreview"></div>
+    </section>
 
     <main class="workspace">
       <header class="topbar">
