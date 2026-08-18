@@ -848,7 +848,7 @@ async function supabaseRequest(pathname, options = {}) {
     throw error;
   }
 
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+  const response = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/${pathname}`, {
     ...options,
     headers: {
       apikey: SUPABASE_SECRET_KEY,
@@ -856,9 +856,16 @@ async function supabaseRequest(pathname, options = {}) {
       "Content-Type": "application/json",
       ...(options.headers || {})
     }
-  });
+  }, 15000, "The database did not respond in time.");
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { message: text };
+    }
+  }
 
   if (!response.ok) {
     const error = new Error(data?.message || data?.hint || `Supabase returned ${response.status}`);
@@ -867,6 +874,24 @@ async function supabaseRequest(pathname, options = {}) {
   }
 
   return data;
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000, timeoutMessage = "The service did not respond in time.") {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      const timeoutError = new Error(timeoutMessage);
+      timeoutError.statusCode = 504;
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 const server = http.createServer(async (request, response) => {
@@ -1658,7 +1683,7 @@ async function sendOrderViaResend(order, files, options = {}) {
   try {
     const pdfFileName = path.basename(files.pdfPath);
     const pdfContent = fs.readFileSync(files.pdfPath).toString("base64");
-    const response = await fetch("https://api.resend.com/emails", {
+    const response = await fetchWithTimeout("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
@@ -1682,7 +1707,7 @@ async function sendOrderViaResend(order, files, options = {}) {
           }
         ]
       })
-    });
+    }, 20000, "The email service did not respond in time.");
 
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {

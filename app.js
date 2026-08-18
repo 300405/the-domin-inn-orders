@@ -11,6 +11,8 @@ const state = {
 };
 
 const ORDER_BACKUP_KEY = "domin-inn-saved-orders-v1";
+const WORKING_DRAFT_KEY = "domin-inn-working-draft-v1";
+const API_TIMEOUT_MS = 20000;
 
 const els = {
   lowStockCount: document.querySelector("#lowStockCount"),
@@ -69,8 +71,25 @@ init();
 async function init() {
   setDefaultDate();
   bindEvents();
-  await Promise.all([loadCatalog(), loadOrders(), loadDrafts()]);
+  await Promise.allSettled([loadCatalog(), loadOrders(), loadDrafts()]);
+  restoreWorkingDraft();
   render();
+}
+
+async function apiFetch(input, options = {}, timeoutMs = API_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("The connection timed out. Your work is still saved on this device; please try again.");
+    }
+    throw new Error("The app could not connect. Your work is still saved on this device; please try again.");
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 function bindEvents() {
@@ -78,10 +97,13 @@ function bindEvents() {
     state.search = event.target.value.trim().toLowerCase();
     renderCatalog();
   });
+  els.neededBy.addEventListener("change", persistCurrentWork);
+  els.orderNote.addEventListener("input", persistCurrentWork);
 
   els.clearCart.addEventListener("click", () => {
     state.cart.clear();
     state.currentDraftId = null;
+    clearWorkingDraft();
     renderCart();
     renderCatalog();
     renderDrafts();
@@ -114,7 +136,7 @@ function bindEvents() {
 
 async function loadCatalog(preferredItemId = null) {
   try {
-    const response = await fetch(`/api/catalog?fresh=${Date.now()}`, { cache: "no-store" });
+    const response = await apiFetch(`/api/catalog?fresh=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error("Stock catalogue unavailable");
 
     const data = await response.json();
@@ -135,7 +157,7 @@ async function loadCatalog(preferredItemId = null) {
 
 async function loadOrders() {
   try {
-    const response = await fetch("/api/orders");
+    const response = await apiFetch("/api/orders");
     if (!response.ok) throw new Error("Saved orders unavailable");
 
     const data = await response.json();
@@ -146,7 +168,7 @@ async function loadOrders() {
       const serverIds = new Set(state.orders.map((order) => order.id));
       const missingOrders = backedUpOrders.filter((order) => !serverIds.has(order.id));
       if (missingOrders.length) {
-        const restoreResponse = await fetch("/api/orders/restore", {
+        const restoreResponse = await apiFetch("/api/orders/restore", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orders: missingOrders })
@@ -163,7 +185,10 @@ async function loadOrders() {
       state.selectedOrderId = state.orders[0].id;
     }
   } catch {
-    state.orders = [];
+    state.orders = readOrderBackup();
+    if (state.orders.length) {
+      setMessage("Online orders are unavailable. Showing the safe copies stored on this device.", "error");
+    }
   }
 
   renderOrders();
@@ -171,7 +196,7 @@ async function loadOrders() {
 
 async function loadDrafts() {
   try {
-    const response = await fetch("/api/drafts");
+    const response = await apiFetch("/api/drafts");
     if (!response.ok) throw new Error("Saved drafts unavailable");
 
     const data = await response.json();
@@ -180,7 +205,8 @@ async function loadDrafts() {
       state.currentDraftId = null;
     }
   } catch {
-    state.drafts = [];
+    const workingDraft = readWorkingDraft();
+    state.drafts = workingDraft?.lineItems?.length ? [workingDraft] : [];
   }
 
   renderDrafts();
@@ -190,15 +216,17 @@ async function refreshSavedWork() {
   await Promise.all([loadOrders(), loadDrafts()]);
 }
 
-async function showPreviousOrders() {
-  await refreshSavedWork();
-
+function showPreviousOrders() {
   const ordersFolder = document.querySelector(".orders-folder");
   if (!ordersFolder) return;
 
   ordersFolder.classList.add("is-open");
   document.body.classList.add("orders-view-open");
   els.closeOrdersFolder.focus();
+
+  refreshSavedWork().catch(() => {
+    setMessage("Could not refresh online orders. The saved copies on this device are still available.", "error");
+  });
 }
 
 function closePreviousOrders() {
@@ -451,7 +479,7 @@ async function addSettingsItem(event) {
   }
 
   try {
-    const response = await fetch("/api/catalog", {
+    const response = await apiFetch("/api/catalog", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -488,7 +516,7 @@ async function saveSettingsItem(event) {
   }
 
   try {
-    const response = await fetch(`/api/catalog/${encodeURIComponent(itemId)}`, {
+    const response = await apiFetch(`/api/catalog/${encodeURIComponent(itemId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -520,7 +548,7 @@ async function deleteSettingsItem() {
   const confirmed = window.confirm(`Delete ${item.name}? This removes it from the catalogue.`);
   if (!confirmed) return;
 
-  const response = await fetch(`/api/catalog/${encodeURIComponent(itemId)}`, {
+  const response = await apiFetch(`/api/catalog/${encodeURIComponent(itemId)}`, {
     method: "DELETE"
   });
 
@@ -531,6 +559,7 @@ async function deleteSettingsItem() {
   }
 
   state.cart.delete(itemId);
+  persistCurrentWork();
   await loadCatalog();
   render();
   renderSettings();
@@ -549,6 +578,7 @@ function addToCart(itemId, quantity) {
 
   renderCart();
   renderCatalog();
+  persistCurrentWork();
   setMessage("", "");
 }
 
@@ -709,7 +739,7 @@ function renderOrderPreview() {
     button.addEventListener("click", () => {
       if (button.dataset.action === "whatsapp") sendOrderToWhatsApp(button.dataset.orderId);
       if (button.dataset.action === "share") shareOrder(button.dataset.orderId);
-      if (button.dataset.action === "email") emailOrder(button.dataset.orderId);
+      if (button.dataset.action === "email") emailOrder(button.dataset.orderId, button);
       if (button.dataset.action === "print") printOrder(button.dataset.orderId);
       if (button.dataset.action === "delete") deleteSavedOrder(button.dataset.orderId);
     });
@@ -742,7 +772,7 @@ async function shareOrder(orderId) {
   const fileName = getOrderPdfName(order).replace(/\.pdf$/, "-priced.pdf");
 
   try {
-    const response = await fetch(pdfUrl);
+    const response = await apiFetch(pdfUrl);
     if (!response.ok) throw new Error("PDF could not be opened.");
 
     const blob = await response.blob();
@@ -793,22 +823,96 @@ function removeOrderBackup(orderId) {
   writeOrderBackup(readOrderBackup().filter((order) => order.id !== orderId));
 }
 
-async function emailOrder(orderId) {
+function readWorkingDraft() {
+  try {
+    const draft = JSON.parse(localStorage.getItem(WORKING_DRAFT_KEY) || "null");
+    return draft && Array.isArray(draft.lineItems) ? draft : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeWorkingDraft(draft) {
+  const previous = readWorkingDraft();
+  const now = new Date().toISOString();
+  const safeDraft = {
+    id: draft.id || previous?.id || "local-working-draft",
+    draftNumber: draft.draftNumber || previous?.draftNumber || "SAVED ON THIS DEVICE",
+    neededBy: draft.neededBy || "",
+    note: draft.note || "",
+    createdAt: draft.createdAt || previous?.createdAt || now,
+    updatedAt: draft.updatedAt || now,
+    lineItems: Array.isArray(draft.lineItems) ? draft.lineItems : []
+  };
+
+  try {
+    localStorage.setItem(WORKING_DRAFT_KEY, JSON.stringify(safeDraft));
+  } catch {
+    // Keep the in-memory basket when browser storage is unavailable.
+  }
+  return safeDraft;
+}
+
+function clearWorkingDraft() {
+  try {
+    localStorage.removeItem(WORKING_DRAFT_KEY);
+  } catch {
+    // Nothing else is required when browser storage is unavailable.
+  }
+}
+
+function persistCurrentWork() {
+  const lineItems = Array.from(state.cart.values());
+  if (!lineItems.length) {
+    clearWorkingDraft();
+    return;
+  }
+
+  writeWorkingDraft({
+    id: state.currentDraftId,
+    neededBy: els.neededBy.value,
+    note: els.orderNote.value.trim(),
+    lineItems
+  });
+}
+
+function restoreWorkingDraft() {
+  const draft = readWorkingDraft();
+  if (!draft?.lineItems?.length || state.cart.size) return;
+
+  state.currentDraftId = draft.id === "local-working-draft" ? null : draft.id;
+  state.cart = new Map(draft.lineItems.map((line) => [line.id, { ...line }]));
+  if (draft.neededBy) els.neededBy.value = draft.neededBy;
+  els.orderNote.value = draft.note || "";
+  setMessage("Your unfinished order was restored from this device.", "success");
+}
+
+async function emailOrder(orderId, button) {
   const order = state.orders.find((entry) => entry.id === orderId);
   if (!order) return;
 
   setMessage(`Emailing ${order.orderNumber} PDF...`, "");
+  const originalLabel = button?.textContent || "Email";
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Sending...";
+  }
 
   try {
-    const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/email`, {
+    const response = await apiFetch(`/api/orders/${encodeURIComponent(orderId)}/email`, {
       method: "POST"
-    });
+    }, 30000);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Email could not be sent.");
 
     setMessage(`Emailed ${data.pdfFileName} to The Domin Inn.`, "success");
   } catch (error) {
     setMessage(error.message, "error");
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
   }
 }
 
@@ -829,7 +933,7 @@ async function deleteSavedOrder(orderId) {
   const confirmed = window.confirm(`Delete ${order.orderNumber}? This removes the saved order and PDF from the orders folder.`);
   if (!confirmed) return;
 
-  const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+  const response = await apiFetch(`/api/orders/${encodeURIComponent(orderId)}`, {
     method: "DELETE"
   });
 
@@ -866,6 +970,7 @@ function setQuantity(itemId, quantity) {
 
   renderCart();
   renderCatalog();
+  persistCurrentWork();
 }
 
 async function deleteStockItem(itemId) {
@@ -875,7 +980,7 @@ async function deleteStockItem(itemId) {
   const confirmed = window.confirm(`Delete ${item.name}? This removes it from the stock catalogue.`);
   if (!confirmed) return;
 
-  const response = await fetch(`/api/catalog/${encodeURIComponent(itemId)}`, {
+  const response = await apiFetch(`/api/catalog/${encodeURIComponent(itemId)}`, {
     method: "DELETE"
   });
 
@@ -901,38 +1006,42 @@ async function saveCurrentDraft() {
     return;
   }
 
+  const draftPayload = {
+    id: state.currentDraftId,
+    neededBy: els.neededBy.value,
+    note: els.orderNote.value.trim(),
+    lineItems: lines.map((line) => ({
+      id: line.id,
+      name: line.name,
+      sku: line.sku,
+      supplier: line.supplier,
+      category: line.category,
+      packSize: line.packSize,
+      quantity: line.quantity,
+      unitCost: line.unitCost
+    }))
+  };
+
+  writeWorkingDraft(draftPayload);
   els.saveDraft.disabled = true;
-  setMessage("Saving this order for later...", "");
+  setMessage("Saved on this device. Syncing online...", "");
 
   try {
-    const response = await fetch("/api/drafts", {
+    const response = await apiFetch("/api/drafts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: state.currentDraftId,
-        neededBy: els.neededBy.value,
-        note: els.orderNote.value.trim(),
-        lineItems: lines.map((line) => ({
-          id: line.id,
-          name: line.name,
-          sku: line.sku,
-          supplier: line.supplier,
-          category: line.category,
-          packSize: line.packSize,
-          quantity: line.quantity,
-          unitCost: line.unitCost
-        }))
-      })
+      body: JSON.stringify(draftPayload)
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Draft could not be saved.");
 
     state.currentDraftId = data.draft.id;
+    writeWorkingDraft(data.draft);
     await loadDrafts();
-    setMessage(`${data.draft.draftNumber} saved. You can open it later on another device.`, "success");
+    setMessage(`${data.draft.draftNumber} saved on this device and synced online.`, "success");
   } catch (error) {
-    setMessage(error.message, "error");
+    setMessage(`Saved safely on this device. Online sync failed: ${error.message}`, "error");
   } finally {
     els.saveDraft.disabled = false;
   }
@@ -961,7 +1070,7 @@ async function deleteDraft(draftId) {
   const confirmed = window.confirm(`Delete ${draft.draftNumber}? This removes the saved draft only.`);
   if (!confirmed) return;
 
-  const response = await fetch(`/api/drafts/${encodeURIComponent(draftId)}`, {
+  const response = await apiFetch(`/api/drafts/${encodeURIComponent(draftId)}`, {
     method: "DELETE"
   });
 
@@ -984,33 +1093,37 @@ async function submitOrder() {
     return;
   }
 
+  const orderPayload = {
+    neededBy: els.neededBy.value,
+    note: els.orderNote.value.trim(),
+    lineItems: lines.map((line) => ({
+      id: line.id,
+      name: line.name,
+      sku: line.sku,
+      supplier: line.supplier,
+      category: line.category,
+      packSize: line.packSize,
+      quantity: line.quantity,
+      unitCost: line.unitCost
+    }))
+  };
+
+  writeWorkingDraft(orderPayload);
   els.submitOrder.disabled = true;
-  setMessage("Submitting stock order...", "");
+  setMessage("Order saved on this device. Submitting online...", "");
 
   try {
-    const response = await fetch("/api/orders", {
+    const response = await apiFetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        neededBy: els.neededBy.value,
-        note: els.orderNote.value.trim(),
-        lineItems: lines.map((line) => ({
-          id: line.id,
-          name: line.name,
-          sku: line.sku,
-          supplier: line.supplier,
-          category: line.category,
-          packSize: line.packSize,
-          quantity: line.quantity,
-          unitCost: line.unitCost
-        }))
-      })
+      body: JSON.stringify(orderPayload)
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Order could not be submitted.");
 
     state.cart.clear();
+    clearWorkingDraft();
     renderCart();
     renderCatalog();
     setMessage(`Submitted ${data.orderNumber}. Editable backup saved for adding extras.`, "success");
@@ -1020,7 +1133,7 @@ async function submitOrder() {
     closeCartPreview();
     await showPreviousOrders();
   } catch (error) {
-    setMessage(error.message, "error");
+    setMessage(`Not submitted online yet. The order is safe on this device: ${error.message}`, "error");
   } finally {
     els.submitOrder.disabled = !state.cart.size;
   }
